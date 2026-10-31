@@ -62,3 +62,6 @@ Ce site est une Progressive Web App (PWA), vous pouvez l'installer comme une app
 ## 📄 Crédits
 
 Ce projet s'appuie sur la documentation technique de [Szeroki](https://blog.szeroki.fr/posts/les-qr-codes-de-basic-fit-comment-ca-fonctionne).
+
+
+
