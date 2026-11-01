@@ -5,25 +5,7 @@
     const KEY = 'fit_data_v1';
     const DAY = 864e5;
 
-    const CATALOG = [
-        { id: 'pushup', name: 'Flexões', kind: 'reps', k: 1 },
-        { id: 'squat', name: 'Agachamentos', kind: 'reps', k: 1 },
-        { id: 'situp', name: 'Abdominais', kind: 'reps', k: 0.8 },
-        { id: 'pullup', name: 'Barras', kind: 'reps', k: 2 },
-        { id: 'bench', name: 'Supino', kind: 'load', k: 1 },
-        { id: 'barsquat', name: 'Agachamento com barra', kind: 'load', k: 1 },
-        { id: 'deadlift', name: 'Peso morto', kind: 'load', k: 1.2 },
-        { id: 'ohp', name: 'Press militar', kind: 'load', k: 1 },
-        { id: 'curl', name: 'Curl bíceps', kind: 'load', k: 0.8 },
-        { id: 'row', name: 'Remo', kind: 'load', k: 1 },
-        { id: 'legpress', name: 'Leg press', kind: 'load', k: 0.8 },
-        { id: 'plank', name: 'Prancha', kind: 'time', k: 8 },
-        { id: 'walk', name: 'Caminhada', kind: 'time', k: 3 },
-        { id: 'bike', name: 'Bicicleta', kind: 'time', k: 4 },
-        { id: 'run', name: 'Corrida', kind: 'time', k: 6 },
-        { id: 'swim', name: 'Natação', kind: 'time', k: 6 },
-        { id: 'hiit', name: 'HIIT', kind: 'time', k: 7 },
-    ];
+    const CATALOG = window.EXERCISES;
     const ROLES = ['Homem', 'Mulher', 'Outro'];
     const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -46,6 +28,10 @@
     function points(entry) {
         const ex = exerciseById(entry.e);
         if (!ex) return 0;
+        if (entry.sets) {
+            return Math.round(entry.sets.reduce((sum, x) => sum + (ex.kind === 'time' ? x.min * ex.k
+                : x.r * ex.k * (ex.kind === 'load' ? 1 + x.kg / 20 : 1)), 0));
+        }
         if (ex.kind === 'time') return Math.round(entry.min * ex.k);
         const volume = entry.s * entry.r;
         return Math.round(ex.kind === 'load' ? volume * (1 + entry.kg / 20) * ex.k : volume * ex.k);
@@ -80,62 +66,36 @@
         return el;
     }
 
-    const number = (name, label, value) =>
-        field(label, h('input', { type: 'number', name, min: 0, step: 'any', value, inputmode: 'decimal' }));
-
     const dot = (member) => h('i', { class: 'dot', style: `background:${member.color}` });
     const toast = (msg) => { if (typeof showToast === 'function') showToast(msg); };
     const confirmDialog = (message) =>
         (typeof showDialog === 'function' ? showDialog({ message, type: 'confirm' }) : Promise.resolve(true));
 
-    // ---------- Treinos ----------
-    function renderTrain() {
-        const root = document.getElementById('view-train');
-        root.replaceChildren();
-
-        if (!db.members.length) {
-            root.append(h('p', { class: 'empty' }, 'Cria primeiro um perfil no separador Perfis.'));
-            return;
+    // ---------- Treinos (últimos registos) ----------
+    function logDetail(l, ex) {
+        if (l.sets) {
+            if (ex.kind === 'time') return `${l.sets.reduce((a, x) => a + x.min, 0)} min`;
+            const best = Math.max(...l.sets.map((x) => x.kg));
+            return `${l.sets.length} séries${ex.kind === 'load' ? ` · até ${best} kg` : ''}`;
         }
-        if (!memberById(ui.member)) ui.member = db.members[0].id;
-        const ex = exerciseById(ui.exercise);
+        return ex.kind === 'time' ? `${l.min} min` : `${l.s}×${l.r}${ex.kind === 'load' ? ` · ${l.kg} kg` : ''}`;
+    }
 
-        const form = h('form', { class: 'panel', onsubmit: onLog },
-            h('h2', {}, 'Registar treino'),
-            field('Quem', select('m', db.members.map((m) => [m.id, m.name]), ui.member, (v) => { ui.member = v; })),
-            field('Exercício', select('e', CATALOG.map((e) => [e.id, e.name]), ui.exercise, (v) => { ui.exercise = v; renderTrain(); })),
-            h('div', { class: 'row' },
-                ex.kind === 'time'
-                    ? number('min', 'Minutos', 20)
-                    : [number('s', 'Séries', 3), number('r', 'Reps', 10), ex.kind === 'load' ? number('kg', 'Kg', 20) : null]),
-            h('button', { type: 'submit' }, 'Adicionar'));
-
+    function renderTrain() {
+        const root = document.getElementById('logBox');
+        root.replaceChildren();
         const recent = db.log.slice(-8).reverse().map((l) => {
             const m = memberById(l.m);
             const e = exerciseById(l.e);
             if (!m || !e) return null;
-            const detail = e.kind === 'time' ? `${l.min} min` : `${l.s}×${l.r}${e.kind === 'load' ? ` · ${l.kg} kg` : ''}`;
             return h('li', {},
                 dot(m),
-                h('div', { class: 'grow' }, h('strong', {}, m.name), ` · ${e.name}`, h('small', {}, detail)),
+                h('div', { class: 'grow' }, h('strong', {}, m.name), ` · ${e.name}`, h('small', {}, logDetail(l, e))),
                 h('b', {}, `+${points(l)}`),
                 h('button', { class: 'btn-x', 'aria-label': 'Apagar', onclick: () => removeLog(l.id) }, '×'));
         });
-
-        root.append(form, h('div', { class: 'panel' }, h('h2', {}, 'Últimos registos'),
+        root.append(h('div', { class: 'panel' }, h('h2', {}, 'Últimos registos'),
             recent.some(Boolean) ? h('ul', { class: 'list' }, recent) : h('p', { class: 'empty' }, 'Ainda sem treinos.')));
-    }
-
-    function onLog(event) {
-        event.preventDefault();
-        const f = new FormData(event.target);
-        const num = (k) => Math.max(0, Number(f.get(k)) || 0);
-        const entry = { id: uid(), m: ui.member, e: ui.exercise, s: num('s'), r: num('r'), kg: num('kg'), min: num('min'), t: Date.now() };
-        if (!points(entry)) { toast('Preenche valores válidos.'); return; }
-        db.log.push(entry);
-        save();
-        toast(`+${points(entry)} pontos!`);
-        renderAll();
     }
 
     function removeLog(id) {
@@ -260,7 +220,27 @@
         renderTrain();
         renderRank();
         renderProfiles();
+        document.dispatchEvent(new Event('fit:change'));
     }
+
+    window.Fit = {
+        h, field, select, toast, confirmDialog, points,
+        exercises: CATALOG,
+        byId: exerciseById,
+        members: () => db.members,
+        addLogs(member, entries) {
+            entries.forEach((e) => db.log.push({ id: uid(), m: member, t: Date.now(), ...e }));
+            save();
+            renderAll();
+        },
+        lastSet(member, exerciseId) {
+            for (let i = db.log.length - 1; i >= 0; i--) {
+                const l = db.log[i];
+                if (l.m === member && l.e === exerciseId && l.sets?.length) return l.sets.at(-1);
+            }
+            return null;
+        },
+    };
 
     renderAll();
 })();
