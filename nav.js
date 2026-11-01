@@ -1,4 +1,4 @@
-// Navegação por separadores (hash): #qr, #treinos, #ranking, #perfis
+// Navegação por separadores (hash): #qr, #treinos, #plano, #exercicios, #medidas, #ranking, #perfis
 (() => {
     'use strict';
     const views = [...document.querySelectorAll('[data-view]')];

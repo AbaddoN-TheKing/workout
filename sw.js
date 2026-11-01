@@ -1,4 +1,4 @@
-const CACHE_VERSION = 6;
+const CACHE_VERSION = 7;
 const CACHE_NAME = `bf-qr-v${CACHE_VERSION}`;
 const ASSETS = [
     './',
@@ -8,6 +8,8 @@ const ASSETS = [
     './exercises.js',
     './workout.js',
     './planner.js',
+    './library.js',
+    './measures.js',
     './nav.js',
     './manifest.json',
     './icon.svg',

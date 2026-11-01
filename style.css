@@ -986,3 +986,56 @@ body.fullscreen-active > .card {
 .set.done input { opacity: 0.6; }
 .set.done .btn-ok { background: var(--success); border-color: var(--success); color: #fff; }
 .rest { margin: 0; min-height: 1.2em; color: var(--primary); font-weight: 700; }
+
+/* ===== Exercícios, medidas e melhorias do treino ===== */
+.app-nav { max-width: 100%; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.app-nav::-webkit-scrollbar { display: none; }
+.app-nav a { white-space: nowrap; flex: none; }
+.row.center { align-items: center; }
+.row.between.center { align-items: center; }
+.note { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--primary-soft); font-size: 0.85rem; }
+.hint { display: block; }
+.timer { color: var(--text-sub); font-weight: 700; font-variant-numeric: tabular-nums; }
+.mini-fld { display: flex; flex-direction: column; gap: 2px; font-size: 0.7rem; color: var(--text-sub); }
+.mini-fld input, .mini-fld select { width: 74px; padding: 8px; border-radius: var(--radius-sm); border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text); font-size: 0.95rem; text-align: center; }
+.rest-pick select { width: 84px; }
+.row.mini { gap: 8px; margin-top: 6px; }
+.plan-item { align-items: flex-start !important; }
+.col-btns { display: flex; flex-direction: column; gap: 4px; }
+.btn-x.small, .col-btns .btn-x { width: 28px; height: 28px; font-size: 0.7rem; }
+textarea { width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text); font: inherit; resize: vertical; }
+textarea:focus, .search:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.search { width: 100%; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text); font-size: 1rem; }
+
+.lib-list { display: flex; flex-direction: column; gap: 10px; }
+.panel.ex { padding: 0; gap: 0; overflow: hidden; }
+.ex-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 14px 16px; background: transparent;
+    color: var(--text); border: 0; box-shadow: none; text-align: left; border-radius: 0; font: inherit; }
+.ex-head small { display: block; color: var(--text-sub); font-weight: 400; }
+.badge { font-size: 0.7rem; padding: 3px 8px; border-radius: var(--radius-full); background: var(--primary-soft); color: var(--primary); font-weight: 600; }
+.chev { color: var(--text-sub); font-size: 0.7rem; }
+.ex-detail { padding: 0 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+.tip { margin: 0; font-size: 0.9rem; line-height: 1.45; color: var(--text-sub); }
+.detail-block { display: flex; flex-direction: column; gap: 10px; }
+.stats { display: flex; gap: 12px; }
+.stats > div { flex: 1; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--primary-soft); display: flex; flex-direction: column; gap: 2px; }
+.list.compact li { font-size: 0.85rem; }
+.right { text-align: right; }
+.chart { width: 100%; }
+.create-form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+details.panel summary { cursor: pointer; font-weight: 600; color: var(--primary); }
+button.danger { color: var(--danger); border-color: var(--danger); }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 12px; text-align: left;
+    background: var(--input-bg); color: var(--text); border: 1.5px solid var(--input-border); box-shadow: none; border-radius: var(--radius-sm); }
+.tile small { color: var(--text-sub); font-weight: 400; }
+.tile b { font-size: 1.1rem; }
+.tile .delta { font-size: 0.75rem; }
+.tile.on { border-color: var(--primary); background: var(--primary-soft); }
+.link-btn { text-align: left; background: transparent; color: var(--text); border: 0; box-shadow: none; padding: 0; font: inherit; }
+.link-btn small { display: block; color: var(--text-sub); font-weight: 400; }

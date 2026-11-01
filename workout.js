@@ -6,6 +6,8 @@
     const DAY = 864e5;
 
     const CATALOG = window.EXERCISES;
+    const CUSTOM_KEY = 'fit_custom_ex_v1';
+    const KINDS = ['reps', 'load', 'time'];
     const ROLES = ['Homem', 'Mulher', 'Outro'];
     const MEDALS = ['🥇', '🥈', '🥉'];
 
@@ -18,7 +20,18 @@
     }
 
     let db = load();
-    const ui = { member: '', exercise: CATALOG[0].id, period: 'week' };
+    const ui = { member: '', exercise: CATALOG[0].id, period: 'week', more: false };
+
+    // Exercícios criados pelo utilizador (entram no mesmo catálogo)
+    function readCustom() {
+        try {
+            const list = JSON.parse(localStorage.getItem(CUSTOM_KEY));
+            return Array.isArray(list) ? list.filter((e) => e && e.id && e.name && KINDS.includes(e.kind)) : [];
+        } catch { return []; }
+    }
+    let custom = readCustom();
+    custom.forEach((e) => CATALOG.push({ ...e, custom: true }));
+    const saveCustom = () => localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom));
 
     const save = () => localStorage.setItem(KEY, JSON.stringify(db));
     const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}${Math.random()}`);
@@ -71,36 +84,172 @@
     const confirmDialog = (message) =>
         (typeof showDialog === 'function' ? showDialog({ message, type: 'confirm' }) : Promise.resolve(true));
 
-    // ---------- Treinos (últimos registos) ----------
+    // ---------- Séries, recordes e gráficos ----------
+    const METRICS = {
+        load: { label: '1RM estimado', unit: 'kg' },
+        reps: { label: 'Máx. reps numa série', unit: 'reps' },
+        time: { label: 'Tempo no dia', unit: 'min' },
+    };
+
+    function setsOf(l, ex) {
+        if (l.sets) return l.sets;
+        if (ex.kind === 'time') return [{ min: l.min || 0 }];
+        return Array.from({ length: l.s || 0 }, () => ({ r: l.r || 0, kg: l.kg || 0 }));
+    }
+
+    // Valor de uma sessão para um exercício (Epley para carga)
+    function valueOf(ex, sets) {
+        let v;
+        if (ex.kind === 'time') v = sets.reduce((a, x) => a + (x.min || 0), 0);
+        else {
+            const maxReps = Math.max(0, ...sets.map((x) => x.r || 0));
+            const rm = Math.max(0, ...sets.map((x) => (x.kg > 0 ? x.kg * (1 + (x.r || 0) / 30) : 0)));
+            v = ex.kind === 'load' && rm > 0 ? rm : maxReps;
+        }
+        return Math.round(v * 10) / 10;
+    }
+
+    function series(member, exId) {
+        const ex = exerciseById(exId);
+        if (!ex) return [];
+        return db.log.filter((l) => l.m === member && l.e === exId)
+            .map((l) => { const sets = setsOf(l, ex); return { t: l.t, v: valueOf(ex, sets), sets }; })
+            .filter((p) => p.v > 0)
+            .sort((a, b) => a.t - b.t);
+    }
+
+    const best = (member, exId) => series(member, exId).reduce((b, p) => (!b || p.v > b.v ? p : b), null);
+    const fmtDate = (t) => new Date(t).toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' });
+    const fmtShort = (t) => new Date(t).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+    const fmtNum = (v) => String(Math.round(v * 10) / 10);
+
+    const SVGNS = 'http://www.w3.org/2000/svg';
+    function svg(tag, attrs = {}, ...kids) {
+        const el = document.createElementNS(SVGNS, tag);
+        for (const [key, val] of Object.entries(attrs)) el.setAttribute(key, val);
+        kids.flat().forEach((c) => { if (c != null) el.append(c); });
+        return el;
+    }
+
+    // Gráfico de linha simples: points = [{ t, v }]
+    function lineChart(points, unit = '') {
+        if (points.length < 2) {
+            return h('p', { class: 'empty' }, points.length ? 'Precisas de 2 registos para ver o gráfico.' : 'Sem dados ainda.');
+        }
+        const W = 320, H = 150, L = 38, R = 12, T = 12, B = 24;
+        const xs = points.map((p) => p.t);
+        const ys = points.map((p) => p.v);
+        const x0 = Math.min(...xs), x1 = Math.max(...xs);
+        const y0 = Math.min(...ys), y1 = Math.max(...ys);
+        const pad = (y1 - y0) || Math.abs(y1) || 1;
+        const lo = y0 - pad * 0.15, hi = y1 + pad * 0.15;
+        const X = (t) => L + (x1 === x0 ? 0.5 : (t - x0) / (x1 - x0)) * (W - L - R);
+        const Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+        const label = { style: 'fill:var(--text-sub);font-size:10px' };
+        const path = points.map((p) => `${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' ');
+        const el = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', style: 'width:100%;height:auto', 'aria-label': 'Gráfico de evolução' },
+            svg('line', { x1: L, x2: W - R, y1: Y(y1), y2: Y(y1), style: 'stroke:var(--input-border)' }),
+            svg('line', { x1: L, x2: W - R, y1: Y(y0), y2: Y(y0), style: 'stroke:var(--input-border)' }),
+            svg('text', { ...label, x: L - 4, y: Y(y1) + 3, 'text-anchor': 'end' }, fmtNum(y1)),
+            svg('text', { ...label, x: L - 4, y: Y(y0) + 3, 'text-anchor': 'end' }, fmtNum(y0)),
+            svg('text', { ...label, x: L, y: H - 6, 'text-anchor': 'start' }, fmtShort(x0)),
+            svg('text', { ...label, x: W - R, y: H - 6, 'text-anchor': 'end' }, fmtShort(x1)),
+            svg('polyline', { points: path, fill: 'none', 'stroke-width': 2.5, 'stroke-linejoin': 'round', style: 'stroke:var(--primary)' }),
+            points.map((p) => svg('circle', { cx: X(p.t), cy: Y(p.v), r: 3.5, style: 'fill:var(--primary)' },
+                svg('title', {}, `${fmtShort(p.t)}: ${fmtNum(p.v)} ${unit}`))));
+        return h('div', { class: 'chart' }, el);
+    }
+
+    // ---------- Treinos (histórico por sessão) ----------
     function logDetail(l, ex) {
         if (l.sets) {
             if (ex.kind === 'time') return `${l.sets.reduce((a, x) => a + x.min, 0)} min`;
-            const best = Math.max(...l.sets.map((x) => x.kg));
-            return `${l.sets.length} séries${ex.kind === 'load' ? ` · até ${best} kg` : ''}`;
+            const top = l.sets.reduce((b, x) => (x.kg > b.kg || (x.kg === b.kg && x.r > b.r) ? x : b), l.sets[0]);
+            const desc = `${l.sets.length} séries`;
+            return ex.kind === 'load' ? `${desc} · melhor ${top.kg} kg × ${top.r}` : `${desc} · melhor ${top.r} reps`;
         }
         return ex.kind === 'time' ? `${l.min} min` : `${l.s}×${l.r}${ex.kind === 'load' ? ` · ${l.kg} kg` : ''}`;
+    }
+
+    function groups() {
+        const map = new Map();
+        db.log.forEach((l) => {
+            const k = l.sid || l.id;
+            if (!map.has(k)) map.set(k, { k, t: l.t, m: l.m, dur: l.dur, note: l.note, items: [] });
+            map.get(k).items.push(l);
+        });
+        return [...map.values()].sort((a, b) => b.t - a.t);
+    }
+
+    function sessionPanel(g) {
+        const m = memberById(g.m);
+        const total = g.items.reduce((sum, l) => sum + points(l), 0);
+        const meta = [fmtDate(g.t), g.dur ? `${g.dur} min` : null].filter(Boolean).join(' · ');
+        return h('div', { class: 'panel' },
+            h('div', { class: 'row between' },
+                h('div', { class: 'row center' }, dot(m), h('div', {}, h('strong', {}, m.name), h('small', { class: 'muted' }, meta))),
+                h('div', { class: 'row center' }, h('b', {}, `+${total}`),
+                    h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Apagar treino', onclick: () => removeSession(g) }, '×'))),
+            h('ul', { class: 'list' }, g.items.map((l) => {
+                const e = exerciseById(l.e);
+                return e ? h('li', {}, h('div', { class: 'grow' }, e.name, h('small', {}, logDetail(l, e))), h('b', {}, `+${points(l)}`)) : null;
+            })),
+            g.note ? h('p', { class: 'note' }, g.note) : null);
     }
 
     function renderTrain() {
         const root = document.getElementById('logBox');
         root.replaceChildren();
-        const recent = db.log.slice(-8).reverse().map((l) => {
-            const m = memberById(l.m);
-            const e = exerciseById(l.e);
-            if (!m || !e) return null;
-            return h('li', {},
-                dot(m),
-                h('div', { class: 'grow' }, h('strong', {}, m.name), ` · ${e.name}`, h('small', {}, logDetail(l, e))),
-                h('b', {}, `+${points(l)}`),
-                h('button', { class: 'btn-x', 'aria-label': 'Apagar', onclick: () => removeLog(l.id) }, '×'));
-        });
-        root.append(h('div', { class: 'panel' }, h('h2', {}, 'Últimos registos'),
-            recent.some(Boolean) ? h('ul', { class: 'list' }, recent) : h('p', { class: 'empty' }, 'Ainda sem treinos.')));
+        const all = groups().filter((g) => memberById(g.m));
+        if (!all.length) {
+            root.append(h('div', { class: 'panel' }, h('h2', {}, 'Histórico'), h('p', { class: 'empty' }, 'Ainda sem treinos.')));
+            return;
+        }
+        (ui.more ? all : all.slice(0, 5)).forEach((g) => root.append(sessionPanel(g)));
+        if (all.length > 5) {
+            root.append(h('button', { type: 'button', class: 'secondary', onclick: () => { ui.more = !ui.more; renderTrain(); } },
+                ui.more ? 'Ver menos' : `Ver todos (${all.length})`));
+        }
     }
 
-    function removeLog(id) {
-        db.log = db.log.filter((l) => l.id !== id);
+    async function removeSession(g) {
+        if (!(await confirmDialog('Apagar este treino do histórico?'))) return;
+        const ids = new Set(g.items.map((l) => l.id));
+        db.log = db.log.filter((l) => !ids.has(l.id));
         save();
+        renderAll();
+    }
+
+    // ---------- Exercícios personalizados ----------
+    function addExercise({ name, muscle, equip, kind, note }) {
+        name = String(name || '').trim().slice(0, 40);
+        if (name.length < 2) { toast('Dá um nome ao exercício.'); return null; }
+        if (CATALOG.some((e) => e.name.toLowerCase() === name.toLowerCase())) { toast('Já existe um exercício com esse nome.'); return null; }
+        const ex = {
+            id: `c_${uid().replace(/-/g, '').slice(0, 10)}`,
+            name,
+            muscle: String(muscle || '').trim().slice(0, 24) || 'Outro',
+            equip: String(equip || '').trim().slice(0, 24) || 'Peso corporal',
+            kind: KINDS.includes(kind) ? kind : 'reps',
+            k: kind === 'time' ? 5 : 1,
+            note: String(note || '').trim().slice(0, 300),
+        };
+        custom.push(ex);
+        saveCustom();
+        CATALOG.push({ ...ex, custom: true });
+        renderAll();
+        return ex;
+    }
+
+    function removeExercise(id) {
+        const i = CATALOG.findIndex((e) => e.id === id && e.custom);
+        if (i < 0) return;
+        CATALOG.splice(i, 1);
+        custom = custom.filter((e) => e.id !== id);
+        saveCustom();
+        db.log = db.log.filter((l) => l.e !== id);
+        save();
+        window.Plan?.purge(id);
         renderAll();
     }
 
@@ -176,7 +325,7 @@
                     h('button', { class: 'btn-x', 'aria-label': 'Apagar', onclick: () => removeTeam(t.id) }, '×')))))
             : null;
 
-        root.append(memberForm, memberList && h('div', { class: 'panel' }, h('h2', {}, 'Perfis'), memberList), teamForm, teamList);
+        root.append(...[memberForm, memberList && h('div', { class: 'panel' }, h('h2', {}, 'Perfis'), memberList), teamForm, teamList].filter(Boolean));
     }
 
     function onAddMember(event) {
@@ -224,7 +373,9 @@
     }
 
     window.Fit = {
-        h, field, select, toast, confirmDialog, points,
+        h, svg, field, select, toast, confirmDialog, points, uid, lineChart,
+        fmtDate, fmtShort, fmtNum, metric: (kind) => METRICS[kind] || METRICS.reps,
+        series, best, valueOf, addExercise, removeExercise,
         exercises: CATALOG,
         byId: exerciseById,
         members: () => db.members,

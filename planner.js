@@ -1,21 +1,23 @@
-// Plano semanal + sessão de treino (séries com peso/reps e descanso).
+// Plano semanal + sessão de treino (séries com peso/reps, descanso, cronómetro e recordes).
 (() => {
     'use strict';
     const { h, field, select, toast, confirmDialog } = window.Fit;
 
     const PLAN_KEY = 'fit_plan_v1';
     const SESSION_KEY = 'fit_session_v1';
+    const REST_KEY = 'fit_rest_v1';
     const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
-    const REST_SECONDS = 90;
+    const REST_OPTIONS = [30, 45, 60, 90, 120, 180];
 
     const read = (key, fallback) => {
         try { return JSON.parse(localStorage.getItem(key)) || fallback; } catch { return fallback; }
     };
     const todayIdx = () => (new Date().getDay() + 6) % 7;
 
-    let plans = read(PLAN_KEY, {});      // { membroId: { diaIdx: [{ e, s, r }] } }
-    let session = read(SESSION_KEY, null); // { m, items: [{ e, sets: [{ kg, r, min, done }] }] }
-    const ui = { member: '', day: todayIdx(), muscle: 'Todos' };
+    let plans = read(PLAN_KEY, {});        // { membroId: { diaIdx: [{ e, s, r }] } }
+    let session = read(SESSION_KEY, null); // { m, start, note, items: [{ e, sets: [{ kg, r, min, done }] }] }
+    let restSeconds = REST_OPTIONS.includes(read(REST_KEY, 90)) ? read(REST_KEY, 90) : 90;
+    const ui = { member: '', day: todayIdx(), muscle: 'Todos', copyTo: null };
 
     const savePlans = () => localStorage.setItem(PLAN_KEY, JSON.stringify(plans));
     const saveSession = () => (session
@@ -25,6 +27,7 @@
     const exercise = (id) => Fit.byId(id);
     const planLabel = (p) => (exercise(p.e)?.kind === 'time' ? `${p.r} min` : `${p.s}×${p.r}`);
     const memberOptions = () => Fit.members().map((m) => [m.id, m.name]);
+    const clock = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
     function ensureMember() {
         if (!Fit.members().some((m) => m.id === ui.member)) ui.member = Fit.members()[0]?.id ?? '';
@@ -34,6 +37,14 @@
     const numInput = (name, value) => h('input', { type: 'number', name, min: 1, value, inputmode: 'numeric' });
 
     // ---------- Plano semanal ----------
+    function miniField(label, plan, key) {
+        return h('label', { class: 'mini-fld' }, h('span', {}, label),
+            h('input', {
+                type: 'number', min: 1, inputmode: 'numeric', value: plan[key],
+                oninput: (e) => { plan[key] = Math.max(1, Math.round(Number(e.target.value)) || 1); savePlans(); },
+            }));
+    }
+
     function renderPlan() {
         const root = document.getElementById('view-plan');
         root.replaceChildren();
@@ -43,7 +54,9 @@
         const days = (plans[ui.member] ||= {});
         const list = (days[ui.day] ||= []);
         const muscles = ['Todos', ...new Set(Fit.exercises.map((e) => e.muscle))];
+        if (!muscles.includes(ui.muscle)) ui.muscle = 'Todos';
         const pool = Fit.exercises.filter((e) => ui.muscle === 'Todos' || e.muscle === ui.muscle);
+        if (ui.copyTo == null || ui.copyTo === ui.day) ui.copyTo = (ui.day + 1) % 7;
 
         const dayButtons = DAYS.map((d, i) => h('button', {
             type: 'button',
@@ -51,25 +64,67 @@
             onclick: () => { ui.day = i; renderPlan(); },
         }, d));
 
-        const items = list.map((p, i) => h('li', {},
-            h('div', { class: 'grow' }, h('strong', {}, exercise(p.e)?.name ?? p.e), h('small', {}, planLabel(p))),
-            h('button', {
-                type: 'button', class: 'btn-x', 'aria-label': 'Remover',
-                onclick: () => { list.splice(i, 1); savePlans(); renderPlan(); },
-            }, '×')));
+        const move = (i, dir) => {
+            const j = i + dir;
+            if (j < 0 || j >= list.length) return;
+            [list[i], list[j]] = [list[j], list[i]];
+            savePlans();
+            renderPlan();
+        };
+
+        const items = list.map((p, i) => {
+            const ex = exercise(p.e);
+            if (!ex) return null;
+            return h('li', { class: 'plan-item' },
+                h('div', { class: 'grow' },
+                    h('strong', {}, ex.name), h('small', {}, `${ex.muscle} · ${ex.equip}`),
+                    h('div', { class: 'row mini' },
+                        ex.kind === 'time' ? null : miniField('Séries', p, 's'),
+                        miniField(ex.kind === 'time' ? 'Min' : 'Reps', p, 'r'))),
+                h('div', { class: 'col-btns' },
+                    h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Subir', onclick: () => move(i, -1) }, '▲'),
+                    h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Descer', onclick: () => move(i, 1) }, '▼')),
+                h('button', {
+                    type: 'button', class: 'btn-x', 'aria-label': 'Remover',
+                    onclick: () => { list.splice(i, 1); savePlans(); renderAll(); },
+                }, '×'));
+        }).filter(Boolean);
+
+        const copyOptions = DAYS.map((d, i) => [String(i), d]).filter(([v]) => Number(v) !== ui.day);
 
         root.append(
             h('div', { class: 'panel' },
                 field('Plano de', select('m', memberOptions(), ui.member, (v) => { ui.member = v; renderPlan(); })),
                 h('div', { class: 'seg days' }, dayButtons)),
             h('div', { class: 'panel' }, h('h2', {}, `Treino de ${DAYS[ui.day]}`),
-                items.length ? h('ul', { class: 'list' }, items) : h('p', { class: 'empty' }, 'Dia de descanso. Adiciona exercícios abaixo.')),
+                items.length ? h('ul', { class: 'list' }, items) : h('p', { class: 'empty' }, 'Dia de descanso. Adiciona exercícios abaixo.'),
+                items.length ? h('div', { class: 'row center' },
+                    select('copyTo', copyOptions, String(ui.copyTo), (v) => { ui.copyTo = Number(v); }),
+                    h('button', { type: 'button', class: 'secondary', onclick: copyDay }, 'Copiar'),
+                    h('button', { type: 'button', class: 'secondary', onclick: clearDay }, 'Limpar')) : null),
             h('form', { class: 'panel', onsubmit: onAddPlan },
                 h('h2', {}, 'Adicionar ao dia'),
                 field('Músculo', select('muscle', muscles.map((x) => [x, x]), ui.muscle, (v) => { ui.muscle = v; renderPlan(); })),
                 field('Exercício', select('e', pool.map((e) => [e.id, `${e.name} · ${e.equip}`]), pool[0].id, () => {})),
                 h('div', { class: 'row' }, field('Séries', numInput('s', 3)), field('Reps / min', numInput('r', 10))),
                 h('button', { type: 'submit' }, 'Adicionar')));
+    }
+
+    async function copyDay() {
+        const src = plans[ui.member][ui.day];
+        const dst = plans[ui.member][ui.copyTo] || [];
+        if (dst.length && !(await confirmDialog(`Substituir o treino de ${DAYS[ui.copyTo]}?`))) return;
+        plans[ui.member][ui.copyTo] = src.map((p) => ({ ...p }));
+        savePlans();
+        toast(`Copiado para ${DAYS[ui.copyTo]}`);
+        renderAll();
+    }
+
+    async function clearDay() {
+        if (!(await confirmDialog(`Limpar o treino de ${DAYS[ui.day]}?`))) return;
+        plans[ui.member][ui.day] = [];
+        savePlans();
+        renderAll();
     }
 
     function onAddPlan(event) {
@@ -81,25 +136,37 @@
         const r = Math.max(1, Number(f.get('r')) || 1);
         plans[ui.member][ui.day].push({ e: ex.id, s, r });
         savePlans();
-        renderPlan();
+        renderAll();
     }
 
-    // ---------- Descanso (sem setInterval: usa requestAnimationFrame) ----------
+    // ---------- Relógios (descanso + duração) sem setInterval ----------
     let restEnd = 0;
-    let raf = 0;
+    let timer = 0;
 
-    function tickRest() {
-        const el = document.getElementById('restClock');
+    function loop() {
+        timer = 0;
+        const sc = document.getElementById('sessionClock');
+        if (sc && session) {
+            const text = `⏱ ${clock(Math.floor((Date.now() - session.start) / 1000))}`;
+            if (sc.textContent !== text) sc.textContent = text;
+        }
+        const rc = document.getElementById('restClock');
         const left = Math.ceil((restEnd - Date.now()) / 1000);
-        if (el) el.textContent = left > 0 ? `⏱ Descanso ${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}` : '';
-        if (left > 0) { raf = requestAnimationFrame(tickRest); return; }
-        if (restEnd) { restEnd = 0; navigator.vibrate?.(300); }
+        if (left > 0) {
+            const text = `Descanso ${clock(left)}`;
+            if (rc && rc.textContent !== text) rc.textContent = text;
+        } else {
+            if (rc) rc.textContent = '';
+            if (restEnd) { restEnd = 0; navigator.vibrate?.(300); }
+        }
+        if (session || restEnd) timer = setTimeout(loop, 250);
     }
+
+    const kick = () => { if (!timer) timer = setTimeout(loop, 0); };
 
     function startRest() {
-        restEnd = Date.now() + REST_SECONDS * 1000;
-        cancelAnimationFrame(raf);
-        tickRest();
+        restEnd = Date.now() + restSeconds * 1000;
+        kick();
     }
 
     // ---------- Sessão ----------
@@ -111,7 +178,8 @@
     }
 
     function startSession(plan) {
-        session = { m: ui.member, items: plan.map((p) => newItem(ui.member, p.e, p.s, p.r)) };
+        const valid = plan.filter((p) => exercise(p.e));
+        session = { m: ui.member, start: Date.now(), note: '', items: valid.map((p) => newItem(ui.member, p.e, p.s, p.r)) };
         saveSession();
         renderSession();
     }
@@ -119,23 +187,39 @@
     async function cancelSession() {
         if (!(await confirmDialog('Cancelar este treino sem guardar?'))) return;
         session = null;
+        restEnd = 0;
         saveSession();
         renderSession();
     }
 
     function finishSession() {
-        const entries = session.items
+        const done = session.items
             .map((item) => ({
                 e: item.e,
                 sets: item.sets.filter((s) => s.done).map((s) => ({ r: s.r || 0, kg: s.kg || 0, min: s.min || 0 })),
             }))
             .filter((entry) => entry.sets.length);
-        if (!entries.length) { toast('Marca pelo menos uma série como feita (✓).'); return; }
+        if (!done.length) { toast('Marca pelo menos uma série como feita (✓).'); return; }
+
+        // Recordes: comparar com o histórico antes de guardar
+        const records = done.filter((entry) => {
+            const prev = Fit.best(session.m, entry.e);
+            return prev && Fit.valueOf(exercise(entry.e), entry.sets) > prev.v;
+        }).map((entry) => exercise(entry.e).name);
+
+        const sid = Fit.uid();
+        const dur = Math.max(1, Math.round((Date.now() - session.start) / 60000));
+        const note = (session.note || '').trim().slice(0, 300);
+        const entries = done.map((entry) => ({ ...entry, sid, dur, ...(note ? { note } : {}) }));
         const total = entries.reduce((sum, entry) => sum + Fit.points(entry), 0);
+
         Fit.addLogs(session.m, entries);
         session = null;
+        restEnd = 0;
         saveSession();
-        toast(`Treino guardado! +${total} pontos`);
+        toast(records.length
+            ? `🏆 Recorde: ${records.slice(0, 2).join(', ')}${records.length > 2 ? '…' : ''} · +${total} pts`
+            : `Treino guardado! +${total} pontos`);
         renderSession();
     }
 
@@ -157,11 +241,19 @@
             }, '✓'));
     }
 
+    function lastHint(ex) {
+        const last = Fit.lastSet(session.m, ex.id);
+        if (!last) return null;
+        if (ex.kind === 'time') return `Última vez: ${last.min} min`;
+        return `Última vez: ${ex.kind === 'load' ? `${last.kg} kg × ` : ''}${last.r}${ex.kind === 'load' ? '' : ' reps'}`;
+    }
+
     function itemPanel(item) {
         const ex = exercise(item.e);
         return h('div', { class: 'panel' },
             h('div', { class: 'row between' },
-                h('div', {}, h('h2', {}, ex.name), h('small', { class: 'muted' }, `${ex.muscle} · ${ex.equip}`)),
+                h('div', {}, h('h2', {}, ex.name), h('small', { class: 'muted' }, `${ex.muscle} · ${ex.equip}`),
+                    lastHint(ex) ? h('small', { class: 'muted hint' }, lastHint(ex)) : null),
                 h('button', {
                     type: 'button', class: 'btn-x', 'aria-label': 'Remover exercício',
                     onclick: () => { session.items = session.items.filter((i) => i !== item); saveSession(); renderSession(); },
@@ -189,13 +281,13 @@
     }
 
     function startPanel() {
-        const plan = plans[ui.member]?.[todayIdx()] ?? [];
+        const plan = (plans[ui.member]?.[todayIdx()] ?? []).filter((p) => exercise(p.e));
         return h('div', { class: 'panel' },
             h('h2', {}, `Treinar · ${DAYS[todayIdx()]}`),
             field('Quem', select('m', memberOptions(), ui.member, (v) => { ui.member = v; renderSession(); })),
             plan.length
                 ? h('ul', { class: 'list' }, plan.map((p) => h('li', {},
-                    h('div', { class: 'grow' }, exercise(p.e)?.name ?? p.e, h('small', {}, planLabel(p))))))
+                    h('div', { class: 'grow' }, exercise(p.e).name, h('small', {}, planLabel(p))))))
                 : h('p', { class: 'empty' }, 'Sem plano para hoje. Cria-o no separador Plano ou começa um treino livre.'),
             h('button', { type: 'button', onclick: () => startSession(plan) }, plan.length ? 'Começar treino' : 'Treino livre'));
     }
@@ -205,23 +297,70 @@
         root.replaceChildren();
         if (!Fit.members().length) { root.append(noMembers()); return; }
         ensureMember();
-        if (!session || !Fit.members().some((m) => m.id === session.m)) { session = null; root.append(startPanel()); return; }
+        if (session) {
+            session.items = session.items.filter((i) => exercise(i.e));
+            session.start ||= Date.now();
+        }
+        if (!session || !Fit.members().some((m) => m.id === session.m)) {
+            session = null;
+            root.append(startPanel());
+            return;
+        }
 
         const name = Fit.members().find((m) => m.id === session.m).name;
-        root.append(
-            h('div', { class: 'panel' }, h('h2', {}, `Treino de ${name}`), h('p', { class: 'rest', id: 'restClock' })),
-            session.items.map(itemPanel),
+        root.append(...[
+            h('div', { class: 'panel' },
+                h('div', { class: 'row between' },
+                    h('h2', {}, `Treino de ${name}`),
+                    h('span', { class: 'timer', id: 'sessionClock' })),
+                h('div', { class: 'row center between' },
+                    h('p', { class: 'rest', id: 'restClock' }),
+                    h('label', { class: 'mini-fld rest-pick' }, h('span', {}, 'Descanso'),
+                        select('rest', REST_OPTIONS.map((s) => [String(s), `${s}s`]), String(restSeconds), (v) => {
+                            restSeconds = Number(v);
+                            localStorage.setItem(REST_KEY, String(restSeconds));
+                        })))),
+            ...session.items.map(itemPanel),
             addExercisePanel(),
+            h('div', { class: 'panel' }, h('h2', {}, 'Notas'),
+                h('textarea', {
+                    rows: 2, maxlength: 300, placeholder: 'Como correu? (opcional)',
+                    oninput: (e) => { session.note = e.target.value; saveSession(); },
+                }, session.note || '')),
             h('div', { class: 'row' },
                 h('button', { type: 'button', class: 'secondary', onclick: cancelSession }, 'Cancelar'),
-                h('button', { type: 'button', onclick: finishSession }, 'Terminar')));
-        if (restEnd) tickRest();
+                h('button', { type: 'button', onclick: finishSession }, 'Terminar')),
+        ]);
+        kick();
     }
 
     function renderAll() {
+        // Remove planos de perfis que já não existem
+        const ids = new Set(Fit.members().map((m) => m.id));
+        const stale = Object.keys(plans).filter((id) => !ids.has(id));
+        if (stale.length) { stale.forEach((id) => delete plans[id]); savePlans(); }
         renderSession();
         renderPlan();
     }
+
+    // API para outros módulos (biblioteca de exercícios)
+    window.Plan = {
+        days: DAYS,
+        today: todayIdx,
+        add(member, day, id, s, r) {
+            ((plans[member] ||= {})[day] ||= []).push({ e: id, s, r });
+            savePlans();
+            renderAll();
+        },
+        purge(id) {
+            Object.values(plans).forEach((days) => {
+                Object.keys(days).forEach((d) => { days[d] = days[d].filter((p) => p.e !== id); });
+            });
+            savePlans();
+            if (session) { session.items = session.items.filter((i) => i.e !== id); saveSession(); }
+            renderAll();
+        },
+    };
 
     document.addEventListener('fit:change', renderAll);
     renderAll();
