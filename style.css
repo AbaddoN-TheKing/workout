@@ -965,3 +965,24 @@ body.fullscreen-active > .card {
 
 .checks { display: flex; flex-direction: column; gap: 8px; }
 .checks label { display: flex; align-items: center; gap: 8px; }
+
+
+/* ===== Plano e sessão ===== */
+.app-nav a { padding: 8px 11px; font-size: 0.8rem; }
+#sessionBox { display: flex; flex-direction: column; gap: 14px; }
+.row.between { justify-content: space-between; align-items: flex-start; }
+.muted { color: var(--text-sub); }
+.secondary { background: transparent; color: var(--primary); border: 1px solid var(--primary); box-shadow: none; }
+.seg.days button { padding: 8px 0; font-size: 0.78rem; position: relative; }
+.seg.days button.has::after { content: ''; position: absolute; bottom: 3px; left: 50%; width: 4px; height: 4px;
+    margin-left: -2px; border-radius: 50%; background: var(--primary); }
+.seg.days button.on.has::after { background: #fff; }
+.set { display: flex; align-items: center; gap: 8px; }
+.set input { flex: 1; min-width: 0; padding: 10px; border-radius: var(--radius-sm); border: 1px solid var(--input-border);
+    background: var(--input-bg); color: var(--text); font-size: 1rem; text-align: center; }
+.set-n { width: 20px; text-align: center; color: var(--text-sub); font-weight: 600; }
+.btn-ok { width: 44px; height: 44px; padding: 0; border-radius: var(--radius-sm); background: transparent;
+    color: var(--text-sub); border: 1px solid var(--input-border); box-shadow: none; }
+.set.done input { opacity: 0.6; }
+.set.done .btn-ok { background: var(--success); border-color: var(--success); color: #fff; }
+.rest { margin: 0; min-height: 1.2em; color: var(--primary); font-weight: 700; }
