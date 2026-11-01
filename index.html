@@ -17,6 +17,11 @@
 
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Fit Crew">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet"
@@ -31,7 +36,10 @@
             <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z" fill="currentColor" /></svg>
             <span>FIT<b>CREW</b></span>
         </a>
-        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="Mudar tema">🌙</button>
+        <div class="header-actions">
+            <button class="install-btn" id="installBtn" type="button" hidden>⬇ App</button>
+            <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="Mudar tema">🌙</button>
+        </div>
     </header>
 
     <main class="app-main">
@@ -193,6 +201,7 @@
     <script src="ranking.js"></script>
     <script src="share.js"></script>
     <script src="profiles.js"></script>
+    <script src="install.js"></script>
     <script src="nav.js"></script>
 </body>
 

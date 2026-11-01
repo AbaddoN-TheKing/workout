@@ -1,4 +1,4 @@
-const CACHE_VERSION = 8;
+const CACHE_VERSION = 9;
 const CACHE_NAME = `fitcrew-v${CACHE_VERSION}`;
 const ASSETS = [
     './',
@@ -14,9 +14,13 @@ const ASSETS = [
     './ranking.js',
     './share.js',
     './profiles.js',
+    './install.js',
     './nav.js',
     './manifest.json',
     './icon.svg',
+    './icon-192.png',
+    './icon-512.png',
+    './apple-touch-icon.png',
     'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js'
 ];
 
