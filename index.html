@@ -32,6 +32,7 @@
     <nav class="app-nav" id="appNav" aria-label="Secções">
         <a href="#qr">QR</a>
         <a href="#treinos">Treinos</a>
+        <a href="#plano">Plano</a>
         <a href="#ranking">Ranking</a>
         <a href="#perfis">Perfis</a>
     </nav>
@@ -121,7 +122,8 @@
     </div>
 
     </section>
-    <section data-view="treinos" class="view" id="view-train"></section>
+    <section data-view="treinos" class="view" id="view-train"><div id="sessionBox"></div><div id="logBox"></div></section>
+    <section data-view="plano" class="view" id="view-plan"></section>
     <section data-view="ranking" class="view" id="view-rank"></section>
     <section data-view="perfis" class="view" id="view-profiles"></section>
 
@@ -186,8 +188,10 @@
         </div>
     </noscript>
 
+    <script src="exercises.js"></script>
     <script src="script.js"></script>
     <script src="workout.js"></script>
+    <script src="planner.js"></script>
     <script src="nav.js"></script>
 </body>
 
