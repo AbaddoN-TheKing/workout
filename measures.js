@@ -37,7 +37,7 @@
     const save = () => localStorage.setItem(KEY, JSON.stringify(data));
 
     function ensureMember() {
-        if (!Fit.members().some((m) => m.id === ui.member)) ui.member = Fit.members()[0]?.id ?? '';
+        if (!Fit.members().some((m) => m.id === ui.member)) ui.member = Fit.me() || Fit.members()[0]?.id || '';
     }
 
     function purge() {
@@ -142,7 +142,7 @@
         const root = document.getElementById('view-measures');
         root.replaceChildren();
         purge();
-        if (!Fit.members().length) { root.append(h('p', { class: 'empty' }, 'Cria primeiro um perfil no separador Perfis.')); return; }
+        if (!Fit.members().length) { root.append(Fit.onboarding()); return; }
         ensureMember();
         if (!pointsFor(ui.metric).length) ui.metric = FIELDS.find(([k]) => pointsFor(k).length)?.[0] ?? 'weight';
 
@@ -153,6 +153,31 @@
             formPanel(), overviewPanel(), chartPanel(), historyPanel(),
         ].filter(Boolean));
     }
+
+    window.Measures = {
+        exportFor: (member) => data.filter((e) => e.m === member),
+        importFor(member, entries) {
+            if (!Array.isArray(entries)) return;
+            const have = new Set(data.map((e) => e.id));
+            entries.slice(0, 2000).forEach((raw) => {
+                const id = String(raw?.id || '');
+                const d = String(raw?.d || '');
+                if (!/^[\w-]{1,64}$/.test(id) || have.has(id) || !/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+                const v = {};
+                FIELDS.forEach(([key]) => {
+                    const n = Number(raw.v?.[key]);
+                    if (Number.isFinite(n) && n > 0 && n < 1000) v[key] = Math.round(n * 10) / 10;
+                });
+                if (!Object.keys(v).length) return;
+                const same = data.find((e) => e.m === member && e.d === d);
+                if (same) same.v = { ...same.v, ...v };
+                else data.push({ id, m: member, d, t: stamp(d), v });
+                have.add(id);
+            });
+            save();
+            render();
+        },
+    };
 
     document.addEventListener('fit:change', render);
     render();

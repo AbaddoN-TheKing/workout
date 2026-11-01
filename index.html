@@ -1,171 +1,162 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="pt">
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#7c3aed">
-    <title>Basic Fit QR Generator</title>
-    <!-- SEO & Meta Tags -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0b0d">
+    <title>Fit Crew · Treina. Compete. Evolui.</title>
     <meta name="description"
-        content="Générez votre QR Code d'accès Basic Fit gratuitement en ligne. Compatible iPhone et Android, multi-comptes, fonctionne hors connexion (PWA). Simple, rapide et sans application officielle.">
-    <meta name="keywords"
-        content="basic fit, qr code, générateur, accès salle, basic fit qr, basic fit carte, web app, pwa, iphone, android, gratuit, sans application, sport, fitness">
-    <meta name="robots" content="index, follow">
-    <meta name="author" content="AbaddoN-TheKing">
-
-    <!-- Open Graph / Social Media -->
-    <meta property="og:title" content="Basic Fit QR Generator - Accès Rapide">
-    <meta property="og:description"
-        content="Générez votre QR code d'accès Basic Fit en une seconde. Fonctionne hors-ligne, multi-comptes et mode sombre.">
+        content="Fit Crew: treinos, planos, medidas e ranking em família. Partilha perfis, compete com quem amas e mantém a sequência. Funciona offline (PWA).">
+    <meta name="author" content="-AbaddoN-">
+    <meta property="og:title" content="Fit Crew · Treina. Compete. Evolui.">
+    <meta property="og:description" content="Treinos, planos, medidas e ranking em família.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://abaddon-theking.github.io/workout/">
     <meta property="og:image" content="https://abaddon-theking.github.io/workout/icon.svg">
 
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Inter:wght@400;500;600;700&display=swap" crossorigin="anonymous">
     <link rel="stylesheet" href="style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
 <body>
+    <header class="app-header">
+        <a class="brand" href="#treinos" aria-label="Fit Crew">
+            <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6z" fill="currentColor" /></svg>
+            <span>FIT<b>CREW</b></span>
+        </a>
+        <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn" aria-label="Mudar tema">🌙</button>
+    </header>
+
+    <main class="app-main">
+        <section data-view="treinos" class="view" id="view-train"><div id="sessionBox"></div><div id="logBox"></div></section>
+        <section data-view="plano" class="view" id="view-plan"></section>
+        <section data-view="exercicios" class="view" id="view-library"></section>
+        <section data-view="medidas" class="view" id="view-measures"></section>
+        <section data-view="ranking" class="view" id="view-rank"></section>
+        <section data-view="perfis" class="view" id="view-profiles"></section>
+
+        <section data-view="qr" class="view">
+            <div class="card">
+                <h1>Acesso <span>Basic-Fit</span></h1>
+
+                <div id="loginForm">
+                    <button class="help-trigger" onclick="toggleModal(true)">Onde encontro os meus dados?</button>
+
+                    <div class="profile-manager">
+                        <select id="profileSelect" class="profile-select" onchange="loadProfile()">
+                            <option value="">Novo cartão</option>
+                        </select>
+                        <button class="btn-icon" id="favBtn" onclick="toggleFavorite()"
+                            aria-label="Marcar como favorito" title="Favorito (arranque automático)">☆</button>
+                        <button class="btn-icon" onclick="saveProfile()" aria-label="Guardar perfil" title="Guardar">💾</button>
+                        <button class="btn-icon" onclick="deleteProfile()" aria-label="Apagar perfil" title="Apagar">🗑️</button>
+                    </div>
+
+                    <div class="form-group" id="magicUrlSection">
+                        <label for="magicUrl">Ligação por URL (Magic Link)</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="magicUrl" placeholder="Cola aqui o URL de ligação..."
+                                oninput="handleMagicUrlInput(this)">
+                        </div>
+                        <div id="magicUrlMsg" class="validation-msg" style="color: var(--success)">Dados recuperados!</div>
+                        <div class="divider">ou</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cardNumber">Número do cartão</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="cardNumber" placeholder="Ex: V012345678" oninput="validateCard()">
+                            <button class="input-toggle" onclick="toggleInput('cardNumber', this)">👁️</button>
+                        </div>
+                        <div id="cardError" class="validation-msg">Formato inválido (Ex: V123456789)</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="deviceId">Device ID</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="deviceId" placeholder="Ex: 8d20fc96-..." oninput="validateDevice()">
+                            <button class="input-toggle" onclick="toggleInput('deviceId', this)">👁️</button>
+                        </div>
+                        <div id="deviceError" class="validation-msg">Formato UUID inválido</div>
+                    </div>
+
+                    <button onclick="handleLogin()">Gerar QR Code</button>
+                    <button id="resetBtn" class="secondary hidden" onclick="resetForm()">Repor</button>
+                </div>
+
+                <div id="qrDisplay" class="hidden">
+                    <div id="qrcode" onclick="toggleFullscreen()"></div>
+                    <button class="exit-fullscreen" onclick="toggleFullscreen()">Fechar ecrã inteiro</button>
+
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress"></div>
+                    </div>
+
+                    <div class="cooldown-info">
+                        ⏱️ Depois de um scan, a Basic-Fit impõe um <strong>intervalo de 3h</strong> antes de poderes
+                        entrar noutro ginásio.
+                    </div>
+
+                    <div class="info">
+                        QR Code gerado localmente.<br>
+                        Atualiza a cada 5s.<br>
+                        <a href="#" onclick="toggleFullscreen(); return false;">[🔍 Ecrã inteiro]</a>
+                    </div>
+
+                    <div class="qr-actions">
+                        <button class="secondary" onclick="shareUrl()">Partilhar URL</button>
+                        <button class="secondary subtle" onclick="logout()">Alterar / Terminar sessão</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div class="footer">v3.0 «Iron» · feito por <strong>-AbaddoN-</strong> 💪</div>
+
     <nav class="app-nav" id="appNav" aria-label="Secções">
-        <a href="#qr">QR</a>
-        <a href="#treinos">Treinos</a>
-        <a href="#plano">Plano</a>
-        <a href="#exercicios">Exercícios</a>
-        <a href="#medidas">Medidas</a>
-        <a href="#ranking">Ranking</a>
-        <a href="#perfis">Perfis</a>
+        <a href="#treinos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" /></svg><span>Treinar</span></a>
+        <a href="#plano"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M3 9.5h18M8 3v3M16 3v3" /></svg><span>Plano</span></a>
+        <a href="#exercicios"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg><span>Exercícios</span></a>
+        <a href="#medidas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg><span>Medidas</span></a>
+        <a href="#ranking"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></svg><span>Ranking</span></a>
+        <a href="#perfis"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20.5v-1a6 6 0 0 1 12 0v1M16 4.6a3.5 3.5 0 0 1 0 6.8M21.5 20.5v-1a6 6 0 0 0-4-5.6" /></svg><span>Perfis</span></a>
+        <a href="#qr"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1" /><rect x="13.5" y="3.5" width="7" height="7" rx="1" /><rect x="3.5" y="13.5" width="7" height="7" rx="1" /><path d="M14 14h2.5v2.5H14zM19 14v6.5h-5" /></svg><span>QR</span></a>
     </nav>
-
-    <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">🌙</button>
-
-    <section data-view="qr" class="view">
-    <div class="card">
-        <h1>Basic Fit QR Generator</h1>
-
-        <div id="loginForm">
-            <button class="help-trigger" onclick="toggleModal(true)">Où trouver mes infos ?</button>
-
-            <div class="profile-manager">
-                <select id="profileSelect" class="profile-select" onchange="loadProfile()">
-                    <option value="">Nouveau profil</option>
-                </select>
-                <button class="btn-icon" id="favBtn" onclick="toggleFavorite()"
-                    aria-label="Marquer comme favori" title="Favori (Démarrage auto)">☆</button>
-                <button class="btn-icon" onclick="saveProfile()"
-                    aria-label="Sauvegarder le profil" title="Sauvegarder">💾</button>
-                <button class="btn-icon" onclick="deleteProfile()"
-                    aria-label="Supprimer le profil" title="Supprimer">🗑️</button>
-            </div>
-
-            <div class="form-group" id="magicUrlSection">
-                <label for="magicUrl">Connexion via URL (Magic Link)</label>
-                <div class="input-wrapper">
-                    <input type="text" id="magicUrl" placeholder="Coller l'URL de connexion ici..."
-                        oninput="handleMagicUrlInput(this)">
-                </div>
-                <div id="magicUrlMsg" class="validation-msg" style="color: var(--success)">Infos récupérées !</div>
-                <div class="divider">ou</div>
-            </div>
-
-            <div class="form-group">
-                <label for="cardNumber">Numéro de Carte</label>
-                <div class="input-wrapper">
-                    <input type="password" id="cardNumber" placeholder="Ex: V012345678" oninput="validateCard()">
-                    <button class="input-toggle" onclick="toggleInput('cardNumber', this)">👁️</button>
-                </div>
-                <div id="cardError" class="validation-msg">Format invalide (Ex: V123456789)</div>
-            </div>
-
-            <div class="form-group">
-                <label for="deviceId">Device ID</label>
-                <div class="input-wrapper">
-                    <input type="password" id="deviceId" placeholder="Ex: 8d20fc96-..." oninput="validateDevice()">
-                    <button class="input-toggle" onclick="toggleInput('deviceId', this)">👁️</button>
-                </div>
-                <div id="deviceError" class="validation-msg">Format UUID invalide</div>
-            </div>
-
-            <button onclick="handleLogin()">Générer QR Code</button>
-            <button id="resetBtn" class="secondary hidden" onclick="resetForm()"
-                style="margin-top: 10px;">Réinitialiser</button>
-        </div>
-
-        <div id="qrDisplay" class="hidden">
-            <div id="qrcode" onclick="toggleFullscreen()"></div>
-            <button class="exit-fullscreen" onclick="toggleFullscreen()">Fermer le plein écran</button>
-
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress"></div>
-            </div>
-
-            <div class="cooldown-info">
-                ⏱️ Après un scan, un <strong>délai de 3h</strong> est imposé par Basic Fit avant de pouvoir accéder à
-                une autre salle.
-            </div>
-
-            <div class="info">
-                QR Code généré localement.<br>
-                Se rafraîchit toutes les 5s.
-                <br>
-                <a href="#" onclick="toggleFullscreen(); return false;"
-                    style="color: var(--primary); font-size: 0.8rem;">[🔍 Mode Plein Écran]</a>
-            </div>
-
-            <div style="margin-top: 20px;">
-                <button class="secondary" onclick="shareUrl()">Partager l'URL</button>
-                <button class="secondary" onclick="logout()"
-                    style="border: none; color: #999; font-size: 0.8rem; margin-top: 5px;">Modifier /
-                    Déconnexion</button>
-            </div>
-        </div>
-    </div>
-
-    </section>
-    <section data-view="treinos" class="view" id="view-train"><div id="sessionBox"></div><div id="logBox"></div></section>
-    <section data-view="plano" class="view" id="view-plan"></section>
-    <section data-view="exercicios" class="view" id="view-library"></section>
-    <section data-view="medidas" class="view" id="view-measures"></section>
-    <section data-view="ranking" class="view" id="view-rank"></section>
-    <section data-view="perfis" class="view" id="view-profiles"></section>
-
-    <div class="footer">
-        v2.3 - Merci à <a href="https://blog.szeroki.fr/posts/les-qr-codes-de-basic-fit-comment-ca-fonctionne"
-            target="_blank" rel="noopener noreferrer">Szeroki</a> pour la documentation.
-    </div>
 
     <div id="helpModal" class="modal-overlay" onclick="handleOverlayClick(event)">
         <div class="modal">
             <div class="modal-header">
-                <h2 class="modal-title">Aide</h2>
+                <h2 class="modal-title">Ajuda</h2>
                 <button class="modal-close" onclick="toggleModal(false)">&times;</button>
             </div>
             <div class="modal-content">
                 <div class="help-section">
-                    <h3>Comment récupérer mes infos ?</h3>
-                    <p>Pour faire fonctionner le générateur, vous avez besoin de votre <strong>Numéro de Carte</strong>
-                        et de votre <strong>Device ID</strong>.</p>
+                    <h3>Como obtenho os meus dados?</h3>
+                    <p>Para o gerador funcionar precisas do teu <strong>Número do cartão</strong> e do teu
+                        <strong>Device ID</strong>.</p>
 
-                    <h4>Étape 1 : Déconnexion</h4>
-                    <p>Sur l'appareil qui génère habituellement les QR codes, déconnectez-vous de l'application
-                        Basic-Fit.</p>
+                    <h4>Passo 1: Terminar sessão</h4>
+                    <p>No dispositivo que costuma gerar os QR codes, termina a sessão na aplicação Basic-Fit.</p>
 
-                    <h4>Étape 2 : Page de connexion</h4>
-                    <p>Lancez la page de connexion à l'aide du bouton "Connexion".</p>
+                    <h4>Passo 2: Página de ligação</h4>
+                    <p>Abre a página de ligação com o botão "Ligar".</p>
 
-                    <h4>Étape 3 : Copier l'URL de la popup</h4>
-                    <p>Copiez l'URL de la popup de la page de connexion en appuyant longuement sur l'URL puis "Copier".
-                    </p>
-                    <img class="image-placeholder" src="./sc/login.gif">
+                    <h4>Passo 3: Copiar o URL do popup</h4>
+                    <p>Copia o URL do popup da página de ligação: prime o URL durante uns segundos e escolhe "Copiar".</p>
+                    <img class="image-placeholder" src="./sc/login.gif" alt="Como copiar o URL">
 
-                    <h4>Étape 4 : Coller l'URL</h4>
-                    <p><strong>• Option A (Facile) :</strong> Collez directement l'URL complète dans le champ
-                        "Connexion via URL".</p>
-                    <p><strong>• Option B (Avancé) :</strong> Collez l'URL ailleurs pour extraire manuellement
-                        <code>deviceID</code> et <code>card-Number</code>.
-                    </p>
+                    <h4>Passo 4: Colar o URL</h4>
+                    <p><strong>• Opção A (fácil):</strong> cola o URL completo no campo "Ligação por URL".</p>
+                    <p><strong>• Opção B (avançada):</strong> cola o URL noutro sítio para extrair manualmente
+                        <code>deviceID</code> e <code>card-Number</code>.</p>
                 </div>
             </div>
         </div>
@@ -177,27 +168,31 @@
             <p id="dialogMessage"></p>
             <input type="text" id="dialogInput" class="dialog-input hidden">
             <div class="dialog-actions">
-                <button id="dialogCancel" class="secondary">Annuler</button>
+                <button id="dialogCancel" class="secondary">Cancelar</button>
                 <button id="dialogConfirm">OK</button>
             </div>
         </div>
     </div>
 
-    <div id="toast" class="toast">URL copiée !</div>
+    <div id="toast" class="toast"></div>
 
     <noscript>
         <div style="text-align:center; padding:2rem; font-family:sans-serif;">
-            <h1>Basic Fit QR Generator</h1>
-            <p>Cette application nécessite JavaScript pour fonctionner.</p>
+            <h1>Fit Crew</h1>
+            <p>Esta aplicação precisa de JavaScript para funcionar.</p>
         </div>
     </noscript>
 
     <script src="exercises.js"></script>
     <script src="script.js"></script>
     <script src="workout.js"></script>
+    <script src="stats.js"></script>
     <script src="planner.js"></script>
     <script src="library.js"></script>
     <script src="measures.js"></script>
+    <script src="ranking.js"></script>
+    <script src="share.js"></script>
+    <script src="profiles.js"></script>
     <script src="nav.js"></script>
 </body>
 

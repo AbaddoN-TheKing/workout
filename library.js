@@ -10,7 +10,7 @@
     const uniq = (key) => [...new Set(Fit.exercises.map((e) => e[key]))];
 
     function ensureMember() {
-        if (!Fit.members().some((m) => m.id === ui.member)) ui.member = Fit.members()[0]?.id ?? '';
+        if (!Fit.members().some((m) => m.id === ui.member)) ui.member = Fit.me() || Fit.members()[0]?.id || '';
     }
 
     function filtered() {

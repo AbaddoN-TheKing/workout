@@ -1,5 +1,5 @@
-const CACHE_VERSION = 7;
-const CACHE_NAME = `bf-qr-v${CACHE_VERSION}`;
+const CACHE_VERSION = 8;
+const CACHE_NAME = `fitcrew-v${CACHE_VERSION}`;
 const ASSETS = [
     './',
     './index.html',
@@ -7,9 +7,13 @@ const ASSETS = [
     './script.js',
     './exercises.js',
     './workout.js',
+    './stats.js',
     './planner.js',
     './library.js',
     './measures.js',
+    './ranking.js',
+    './share.js',
+    './profiles.js',
     './nav.js',
     './manifest.json',
     './icon.svg',

@@ -1,10 +1,10 @@
 {
-    "name": "Basic Fit QR Generator",
-    "short_name": "BF QR",
-    "start_url": "./index.html",
+    "name": "Fit Crew",
+    "short_name": "Fit Crew",
+    "start_url": "./index.html#treinos",
     "display": "standalone",
-    "background_color": "#f4f4f5",
-    "theme_color": "#7c3aed",
+    "background_color": "#0b0b0d",
+    "theme_color": "#0b0b0d",
     "orientation": "portrait",
     "icons": [
         {

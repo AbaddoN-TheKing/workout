@@ -30,10 +30,10 @@
     const clock = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
     function ensureMember() {
-        if (!Fit.members().some((m) => m.id === ui.member)) ui.member = Fit.members()[0]?.id ?? '';
+        if (!Fit.members().some((m) => m.id === ui.member)) ui.member = Fit.me() || Fit.members()[0]?.id || '';
     }
 
-    const noMembers = () => h('p', { class: 'empty' }, 'Cria primeiro um perfil no separador Perfis.');
+    const noMembers = () => Fit.onboarding();
     const numInput = (name, value) => h('input', { type: 'number', name, min: 1, value, inputmode: 'numeric' });
 
     // ---------- Plano semanal ----------
@@ -303,7 +303,7 @@
         }
         if (!session || !Fit.members().some((m) => m.id === session.m)) {
             session = null;
-            root.append(startPanel());
+            root.append(...[Fit.heroPanel(ui.member), startPanel()].filter(Boolean));
             return;
         }
 
@@ -349,6 +349,27 @@
         today: todayIdx,
         add(member, day, id, s, r) {
             ((plans[member] ||= {})[day] ||= []).push({ e: id, s, r });
+            savePlans();
+            renderAll();
+        },
+        exportFor(member) {
+            const days = plans[member] || {};
+            const out = {};
+            Object.keys(days).forEach((d) => { if (days[d]?.length) out[d] = days[d]; });
+            return out;
+        },
+        importFor(member, days) {
+            if (!days || typeof days !== 'object') return;
+            const clean = {};
+            for (let d = 0; d < 7; d++) {
+                const list = Array.isArray(days[d]) ? days[d] : [];
+                clean[d] = list.slice(0, 40).map((p) => ({
+                    e: String(p?.e || ''),
+                    s: Math.min(50, Math.max(1, Math.round(Number(p?.s)) || 1)),
+                    r: Math.min(1000, Math.max(1, Math.round(Number(p?.r)) || 1)),
+                })).filter((p) => /^[\w-]{1,40}$/.test(p.e) && exercise(p.e));
+            }
+            plans[member] = clean;
             savePlans();
             renderAll();
         },

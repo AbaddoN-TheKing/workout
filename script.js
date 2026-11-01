@@ -57,7 +57,7 @@ function showDialog({ title, message, type = 'alert', defaultValue = '' }) {
 
 document.addEventListener('DOMContentLoaded', () => {
     const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const savedTheme = localStorage.getItem('theme') || (systemDark ? 'dark' : 'light');
+    const savedTheme = localStorage.getItem('theme') || 'dark';
     setTheme(savedTheme);
 
     const storedProfiles = localStorage.getItem('bf_profiles');
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const legacyCard = localStorage.getItem('bf_card');
     const legacyDevice = localStorage.getItem('bf_device');
     if (legacyCard && legacyDevice && profiles.length === 0) {
-        profiles.push({ name: 'Mon Profil', card: legacyCard, device: legacyDevice });
+        profiles.push({ name: 'O meu cartão', card: legacyCard, device: legacyDevice });
         saveProfilesToStorage();
         updateProfileSelect();
         localStorage.removeItem('bf_card');
@@ -97,13 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateProfileSelect() {
     const select = document.getElementById('profileSelect');
-    select.innerHTML = '<option value="">Nouveau profil</option>';
+    select.innerHTML = '<option value="">Novo cartão</option>';
 
     profiles.forEach((p, index) => {
         const option = document.createElement('option');
         option.value = index;
         const star = p.favorite ? ' ⭐' : '';
-        option.textContent = (p.name || `Carte ${p.card}`) + star;
+        option.textContent = (p.name || `Cartão ${p.card}`) + star;
         select.appendChild(option);
     });
 }
@@ -170,16 +170,16 @@ function handleMagicUrlInput(input) {
 
             if (newCard && newDevice && validateCard() && validateDevice()) {
                 setTimeout(async () => {
-                    const ok = await showDialog({ message: 'Carte détectée ! Voulez-vous la sauvegarder en tant que nouveau profil ?', type: 'confirm' });
+                    const ok = await showDialog({ message: 'Cartão detetado! Queres guardá-lo como novo perfil?', type: 'confirm' });
                     if (ok) {
-                        const name = await showDialog({ message: 'Nom du profil :', type: 'prompt', defaultValue: 'Mon Profil' });
+                        const name = await showDialog({ message: 'Nome do perfil:', type: 'prompt', defaultValue: 'O meu cartão' });
                         if (name) {
                             profiles.push({ name, card: newCard, device: newDevice, favorite: false });
                             saveProfilesToStorage();
                             updateProfileSelect();
                             document.getElementById('profileSelect').value = profiles.length - 1;
                             loadProfile();
-                            showToast('Profil sauvegardé !');
+                            showToast('Perfil guardado!');
                         }
                     }
                 }, 300);
@@ -214,16 +214,16 @@ async function saveProfile() {
     const index = document.getElementById('profileSelect').value;
 
     if (!card || !device) {
-        await showDialog({ message: "Veuillez remplir les champs." });
+        await showDialog({ message: "Preenche os campos." });
         return;
     }
 
     if (!validateCard() || !validateDevice()) {
-        await showDialog({ message: "Les données semblent invalides. Vérifiez les formats." });
+        await showDialog({ message: "Os dados parecem inválidos. Verifica os formatos." });
         return;
     }
 
-    const name = await showDialog({ message: "Nom du profil :", type: 'prompt', defaultValue: index !== "" ? profiles[index].name : "Mon Profil" });
+    const name = await showDialog({ message: "Nome do perfil:", type: 'prompt', defaultValue: index !== "" ? profiles[index].name : "O meu cartão" });
     if (!name) return;
 
     let isFav = false;
@@ -248,14 +248,14 @@ async function saveProfile() {
         document.getElementById('profileSelect').value = index;
     }
     loadProfile();
-    showToast('Profil sauvegardé !');
+    showToast('Perfil guardado!');
 }
 
 async function deleteProfile() {
     const index = document.getElementById('profileSelect').value;
     if (index === "") return;
 
-    const ok = await showDialog({ message: "Supprimer ce profil ?", type: 'confirm' });
+    const ok = await showDialog({ message: "Apagar este perfil?", type: 'confirm' });
     if (ok) {
         profiles.splice(index, 1);
         saveProfilesToStorage();
@@ -370,7 +370,7 @@ async function handleLogin() {
     const deviceInput = document.getElementById('deviceId').value.trim();
 
     if (!cardInput || !deviceInput) {
-        await showDialog({ message: "Veuillez remplir tous les champs." });
+        await showDialog({ message: "Preenche todos os campos." });
         return;
     }
 
@@ -378,7 +378,7 @@ async function handleLogin() {
     const isDeviceValid = validateDevice();
 
     if (!isCardValid || !isDeviceValid) {
-        await showDialog({ message: "Veuillez corriger les erreurs de format avant de générer." });
+        await showDialog({ message: "Corrige os erros de formato antes de gerar." });
         return;
     }
 
@@ -432,9 +432,9 @@ function shareUrl() {
     url.searchParams.set('device', state.deviceId);
 
     navigator.clipboard.writeText(url.toString()).then(() => {
-        showToast("URL copiée dans le presse-papier !");
+        showToast("URL copiado!");
     }).catch(() => {
-        showToast("Impossible de copier l'URL.");
+        showToast("Não foi possível copiar o URL.");
     });
 }
 
@@ -462,7 +462,7 @@ function handleOverlayClick(event) {
 
 async function sha256(message) {
     if (!crypto.subtle) {
-        showToast("Erreur : contexte non sécurisé (HTTPS requis).");
+        showToast("Erro: contexto não seguro (requer HTTPS).");
         throw new Error('crypto.subtle unavailable');
     }
     const msgBuffer = new TextEncoder().encode(message);

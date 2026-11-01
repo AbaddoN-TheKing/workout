@@ -1,67 +1,28 @@
-# Basic Fit QR Generator
+# Fit Crew 💪
 
-> **Accéder au site :** [https://kurbutoke.github.io/Basic/](https://kurbutoke.github.io/Basic/)
+Treina. Compete. Evolui. App de treino em família (PWA, sem servidor, funciona offline).
 
-**Basic Fit QR Generator** est une application web (PWA) gratuite et open-source pour générer votre **QR code d'accès Basic Fit**. 
-Plus besoin de l'application officielle : accédez à votre salle de sport rapidement, même sans connexion internet. Compatible **iPhone**, **Android**, PC et Mac.
+**Demo:** https://abaddon-theking.github.io/workout/
 
-## 🚀 Fonctionnalités
+## O que tem
+- **Treinar** – início motivacional (sequência, meta semanal, nível), treino guiado com séries/peso/reps, descanso, cronómetro, notas e deteção de recordes.
+- **Plano** – plano semanal por perfil: editar séries/reps, reordenar, copiar dias.
+- **Exercícios** – biblioteca com pesquisa, filtros, dicas, evolução por exercício e criação de exercícios próprios.
+- **Medidas** – peso, gordura e perímetros com gráficos de evolução.
+- **Ranking** – pódio (pontos, treinos, sequência, volume), semana da família, duelos e comparação entre perfis.
+- **Perfis** – foto, nível, conquistas e meta semanal; **partilhar/importar perfis** por ficheiro ou código.
+- **QR** – gerador de QR de acesso Basic-Fit (mantido da versão original).
 
-- **Génération de QR Code** : Crée un QR code valide rafraîchi automatiquement toutes les 5 secondes.
-- **Multi-Profils** : Enregistrez plusieurs comptes (famille, amis) et switchez facilement.
-- **Mode PWA** : Installable comme une application sur votre téléphone (Android/iOS) pour un accès hors-ligne et rapide.
-- **Thèmes** : Supporte le mode clair et le mode sombre (Dark Mode).
-- **Plein Écran** : Idéal pour passer le portique facilement, cliquez simplement sur le QR Code.
-- **Favoris** : Définissez un profil par défaut qui se charge automatiquement au démarrage.
+## Competir em família
+1. Cada pessoa cria o seu perfil no telemóvel e treina.
+2. Em **Perfis → Partilhar** (ficheiro) ou **Código** (texto), envia o perfil por mensagem.
+3. Quem recebe vai a **Perfis → Importar** (ficheiro ou colar código). O perfil aparece no ranking.
+4. Para atualizar, volta a enviar/importar: só entram os treinos novos.
 
-## 📋 Prérequis
+Os dados ficam apenas no dispositivo (`localStorage`). Usa **Exportar todos** como cópia de segurança.
 
-Pour utiliser ce générateur, vous avez besoin de deux informations uniques liées à votre compte Basic Fit :
-1. **Numéro de Carte** (`card-Number`)
-2. **Device ID** (`deviceID`)
+## Notas
+- Sem backend: nada sai do teu telemóvel a não ser o que partilhas.
+- Código em JS puro (sem build). Basta publicar a pasta (GitHub Pages).
 
-## 🛠️ Comment récupérer ses informations ?
-
-Voici la méthode pour retrouver vos identifiants :
-
-1. **Déconnexion** : Sur l'appareil qui utilise habituellement l'application Basic Fit, déconnectez-vous de votre compte.
-2. **Page de connexion** : Lancez la page de connexion en cliquant sur "Connexion".
-3. **Copier l'URL** : Une fois sur la page de connexion (popup), appuyez longuement sur la barre d'adresse (l'URL) et sélectionnez "Copier".
-   
-   ![Tuto Login](./sc/login.gif)
-4. **Utiliser les infos** : Revenez sur le générateur.
-   - **Option A (Facile)** : Collez directement l'URL complète dans le champ "Connexion via URL (Magic Link)". Le site remplira automatiquement vos infos.
-   - **Option B (Avancé)** : Collez l'URL dans une note pour chercher manuellement :
-     - `card-Number=` (ex: `V123456789`)
-     - `deviceID=` (ex: `8d20fc96-...`)
-
-*Note : Ces informations sont personnelles, ne les partagez pas.*
-
-## 💻 Installation / Utilisation Locale
-
-Il s'agit d'une application web statique constituée de fichiers HTML, CSS et JavaScript purs.
-
-1. Téléchargez les fichiers du projet.
-2. Ouvrez le fichier `index.html` dans vote navigateur.
-3. Renseignez vos informations et lancez le générateur.
-
-## 📱 Installation Mobile (PWA)
-
-Ce site est une Progressive Web App (PWA), vous pouvez l'installer comme une app native :
-
-**iOS (Safari)** :
-1. Ouvrez le site dans Safari.
-2. Appuyez sur le bouton "Partager" (carré avec une flèche vers le haut).
-3. Sélectionnez "Sur l'écran d'accueil".
-
-**Android (Chrome)** :
-1. Ouvrez le site dans Chrome.
-2. Appuyez sur le menu (3 points verticaux).
-3. Sélectionnez "Installer l'application" ou "Ajouter à l'écran d'accueil".
-
-## 📄 Crédits
-
-Ce projet s'appuie sur la documentation technique de [Szeroki](https://blog.szeroki.fr/posts/les-qr-codes-de-basic-fit-comment-ca-fonctionne).
-
-
-
+**v3.0 «Iron»** · feito por -AbaddoN-

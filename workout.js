@@ -34,7 +34,7 @@
     const saveCustom = () => localStorage.setItem(CUSTOM_KEY, JSON.stringify(custom));
 
     const save = () => localStorage.setItem(KEY, JSON.stringify(db));
-    const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}${Math.random()}`);
+    const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`);
     const memberById = (id) => db.members.find((m) => m.id === id);
     const exerciseById = (id) => CATALOG.find((e) => e.id === id);
 
@@ -79,7 +79,45 @@
         return el;
     }
 
-    const dot = (member) => h('i', { class: 'dot', style: `background:${member.color}` });
+    // ---------- Perfis: validação, foto e avatar ----------
+    const HEX = /^#[0-9a-f]{6}$/i;
+    const ID = /^[\w-]{1,64}$/;
+    const PHOTO = /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/;
+    const safeColor = (c) => (HEX.test(c) ? c : '#c6ff3d');
+    const safePhoto = (p) => (typeof p === 'string' && p.length < 150000 && PHOTO.test(p) ? p : '');
+    const clean = (v, n) => String(v ?? '').trim().slice(0, n);
+    const clampGoal = (g) => Math.min(7, Math.max(1, Math.round(Number(g)) || 3));
+
+    function processPhoto(file, size = 192) {
+        return new Promise((resolve, reject) => {
+            if (!file || !String(file.type).startsWith('image/')) { reject(new Error('Ficheiro inválido')); return; }
+            const url = URL.createObjectURL(file);
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const side = Math.min(img.width, img.height);
+                canvas.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+                URL.revokeObjectURL(url);
+                resolve(canvas.toDataURL('image/jpeg', 0.82));
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Imagem inválida')); };
+            img.src = url;
+        });
+    }
+
+    function avatar(member, size = 40) {
+        const el = h('span', {
+            class: 'avatar',
+            style: `--c:${safeColor(member.color)};width:${size}px;height:${size}px;font-size:${Math.round(size * 0.42)}px`,
+        });
+        const photo = safePhoto(member.photo);
+        if (photo) el.append(h('img', { src: photo, alt: '' }));
+        else el.textContent = String(member.name || '?').trim().charAt(0).toUpperCase();
+        return el;
+    }
+    const dot = (member) => avatar(member, 30);
     const toast = (msg) => { if (typeof showToast === 'function') showToast(msg); };
     const confirmDialog = (message) =>
         (typeof showDialog === 'function' ? showDialog({ message, type: 'confirm' }) : Promise.resolve(true));
@@ -131,14 +169,15 @@
         return el;
     }
 
-    // Gráfico de linha simples: points = [{ t, v }]
-    function lineChart(points, unit = '') {
-        if (points.length < 2) {
-            return h('p', { class: 'empty' }, points.length ? 'Precisas de 2 registos para ver o gráfico.' : 'Sem dados ainda.');
+    // Gráfico de linhas: list = [{ color, points: [{ t, v }] }]
+    function multiChart(list, unit = '') {
+        const all = list.flatMap((l) => l.points);
+        if (all.length < 2) {
+            return h('p', { class: 'empty' }, all.length ? 'Precisas de 2 registos para ver o gráfico.' : 'Sem dados ainda.');
         }
         const W = 320, H = 150, L = 38, R = 12, T = 12, B = 24;
-        const xs = points.map((p) => p.t);
-        const ys = points.map((p) => p.v);
+        const xs = all.map((p) => p.t);
+        const ys = all.map((p) => p.v);
         const x0 = Math.min(...xs), x1 = Math.max(...xs);
         const y0 = Math.min(...ys), y1 = Math.max(...ys);
         const pad = (y1 - y0) || Math.abs(y1) || 1;
@@ -146,19 +185,27 @@
         const X = (t) => L + (x1 === x0 ? 0.5 : (t - x0) / (x1 - x0)) * (W - L - R);
         const Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
         const label = { style: 'fill:var(--text-sub);font-size:10px' };
-        const path = points.map((p) => `${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' ');
         const el = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', style: 'width:100%;height:auto', 'aria-label': 'Gráfico de evolução' },
-            svg('line', { x1: L, x2: W - R, y1: Y(y1), y2: Y(y1), style: 'stroke:var(--input-border)' }),
-            svg('line', { x1: L, x2: W - R, y1: Y(y0), y2: Y(y0), style: 'stroke:var(--input-border)' }),
+            svg('line', { x1: L, x2: W - R, y1: Y(y1), y2: Y(y1), style: 'stroke:var(--line)' }),
+            svg('line', { x1: L, x2: W - R, y1: Y(y0), y2: Y(y0), style: 'stroke:var(--line)' }),
             svg('text', { ...label, x: L - 4, y: Y(y1) + 3, 'text-anchor': 'end' }, fmtNum(y1)),
             svg('text', { ...label, x: L - 4, y: Y(y0) + 3, 'text-anchor': 'end' }, fmtNum(y0)),
             svg('text', { ...label, x: L, y: H - 6, 'text-anchor': 'start' }, fmtShort(x0)),
             svg('text', { ...label, x: W - R, y: H - 6, 'text-anchor': 'end' }, fmtShort(x1)),
-            svg('polyline', { points: path, fill: 'none', 'stroke-width': 2.5, 'stroke-linejoin': 'round', style: 'stroke:var(--primary)' }),
-            points.map((p) => svg('circle', { cx: X(p.t), cy: Y(p.v), r: 3.5, style: 'fill:var(--primary)' },
-                svg('title', {}, `${fmtShort(p.t)}: ${fmtNum(p.v)} ${unit}`))));
+            list.map((l) => {
+                const color = l.color && HEX.test(l.color) ? l.color : 'var(--primary)';
+                const pts = [...l.points].sort((a, b) => a.t - b.t);
+                return [
+                    svg('polyline', { points: pts.map((p) => `${X(p.t).toFixed(1)},${Y(p.v).toFixed(1)}`).join(' '),
+                        fill: 'none', 'stroke-width': 2.5, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', style: `stroke:${color}` }),
+                    pts.map((p) => svg('circle', { cx: X(p.t), cy: Y(p.v), r: 3.5, style: `fill:${color}` },
+                        svg('title', {}, `${l.name ? `${l.name} · ` : ''}${fmtShort(p.t)}: ${fmtNum(p.v)} ${unit}`))),
+                ];
+            }));
         return h('div', { class: 'chart' }, el);
     }
+
+    const lineChart = (points, unit = '') => multiChart([{ points }], unit);
 
     // ---------- Treinos (histórico por sessão) ----------
     function logDetail(l, ex) {
@@ -253,103 +300,41 @@
         renderAll();
     }
 
-    // ---------- Ranking ----------
-    function bars(memberIds, sums) {
-        const rows = memberIds.map(memberById).filter(Boolean)
-            .map((m) => ({ m, pts: sums.get(m.id) || 0 })).sort((a, b) => b.pts - a.pts);
-        const max = Math.max(1, ...rows.map((r) => r.pts));
-        return h('div', { class: 'bars' }, rows.map((r, i) =>
-            h('div', { class: 'bar-row' },
-                h('span', { class: 'bar-name' }, MEDALS[i] || '', ' ', r.m.name),
-                h('div', { class: 'bar-track' }, h('div', { class: 'bar-fill', style: `width:${(r.pts / max) * 100}%;background:${r.m.color}` })),
-                h('b', {}, r.pts))));
+    // ---------- Perfis e equipas (API) ----------
+    const ME_KEY = 'fit_me_v1';
+    const me = () => {
+        const id = localStorage.getItem(ME_KEY);
+        return memberById(id) ? id : '';
+    };
+    const setMe = (id) => { localStorage.setItem(ME_KEY, id); renderAll(); };
+
+    function addMember({ id, name, role, color, photo, goal }) {
+        name = clean(name, 24);
+        if (!name) return null;
+        const m = {
+            id: id && ID.test(id) ? id : uid(), name, role: ROLES.includes(role) ? role : 'Outro',
+            color: safeColor(color), photo: safePhoto(photo), goal: clampGoal(goal),
+        };
+        db.members.push(m);
+        if (db.members.length === 1) localStorage.setItem(ME_KEY, m.id);
+        save();
+        renderAll();
+        return m;
     }
 
-    function leadLine(team, sums) {
-        const rows = team.memberIds.map(memberById).filter(Boolean)
-            .map((m) => ({ m, pts: sums.get(m.id) || 0 })).sort((a, b) => b.pts - a.pts);
-        if (rows.length < 2) return '';
-        const diff = rows[0].pts - rows[1].pts;
-        return diff === 0 ? 'Empate!' : `${rows[0].m.name} lidera por ${diff} pts`;
-    }
-
-    function renderRank() {
-        const root = document.getElementById('view-rank');
-        root.replaceChildren();
-        const since = ui.period === 'week' ? Date.now() - 7 * DAY : 0;
-        const sums = totals(since);
-
-        const toggle = h('div', { class: 'seg' }, [['week', 'Últimos 7 dias'], ['all', 'Sempre']].map(([v, t]) =>
-            h('button', { type: 'button', class: ui.period === v ? 'on' : '', onclick: () => { ui.period = v; renderRank(); } }, t)));
-
-        root.append(toggle);
-        if (!db.members.length) { root.append(h('p', { class: 'empty' }, 'Sem perfis ainda.')); return; }
-
-        root.append(h('div', { class: 'panel' }, h('h2', {}, 'Geral'), bars(db.members.map((m) => m.id), sums)));
-        db.teams.forEach((t) => {
-            root.append(h('div', { class: 'panel' },
-                h('h2', {}, `⚔️ ${t.name}`), bars(t.memberIds, sums), h('p', { class: 'lead' }, leadLine(t, sums))));
-        });
-    }
-
-    // ---------- Perfis e equipas ----------
-    function renderProfiles() {
-        const root = document.getElementById('view-profiles');
-        root.replaceChildren();
-
-        const memberForm = h('form', { class: 'panel', onsubmit: onAddMember },
-            h('h2', {}, 'Novo perfil'),
-            field('Nome', h('input', { name: 'name', required: true, maxlength: 24, autocomplete: 'off' })),
-            h('div', { class: 'row' },
-                field('Tipo', h('select', { name: 'role' }, ROLES.map((r) => h('option', { value: r }, r)))),
-                field('Cor', h('input', { name: 'color', type: 'color', value: '#7c3aed' }))),
-            h('button', { type: 'submit' }, 'Criar perfil'));
-
-        const memberList = db.members.length
-            ? h('ul', { class: 'list' }, db.members.map((m) =>
-                h('li', {}, dot(m), h('div', { class: 'grow' }, h('strong', {}, m.name), h('small', {}, m.role)),
-                    h('button', { class: 'btn-x', 'aria-label': 'Apagar', onclick: () => removeMember(m.id) }, '×'))))
-            : null;
-
-        const teamForm = db.members.length >= 2 ? h('form', { class: 'panel', onsubmit: onAddTeam },
-            h('h2', {}, 'Nova equipa / casal'),
-            field('Nome', h('input', { name: 'name', required: true, maxlength: 24, autocomplete: 'off' })),
-            h('div', { class: 'checks' }, db.members.map((m) =>
-                h('label', {}, h('input', { type: 'checkbox', name: 'member', value: m.id }), dot(m), m.name))),
-            h('button', { type: 'submit' }, 'Criar equipa')) : null;
-
-        const teamList = db.teams.length
-            ? h('div', { class: 'panel' }, h('h2', {}, 'Equipas'), h('ul', { class: 'list' }, db.teams.map((t) =>
-                h('li', {}, h('div', { class: 'grow' }, h('strong', {}, t.name),
-                    h('small', {}, t.memberIds.map((id) => memberById(id)?.name).filter(Boolean).join(' vs '))),
-                    h('button', { class: 'btn-x', 'aria-label': 'Apagar', onclick: () => removeTeam(t.id) }, '×')))))
-            : null;
-
-        root.append(...[memberForm, memberList && h('div', { class: 'panel' }, h('h2', {}, 'Perfis'), memberList), teamForm, teamList].filter(Boolean));
-    }
-
-    function onAddMember(event) {
-        event.preventDefault();
-        const f = new FormData(event.target);
-        const name = String(f.get('name')).trim();
-        if (!name) return;
-        db.members.push({ id: uid(), name, role: f.get('role'), color: f.get('color') });
+    function updateMember(id, patch) {
+        const m = memberById(id);
+        if (!m) return;
+        if ('name' in patch) { const n = clean(patch.name, 24); if (n) m.name = n; }
+        if ('role' in patch && ROLES.includes(patch.role)) m.role = patch.role;
+        if ('color' in patch) m.color = safeColor(patch.color);
+        if ('photo' in patch) m.photo = safePhoto(patch.photo);
+        if ('goal' in patch) m.goal = clampGoal(patch.goal);
         save();
         renderAll();
     }
 
-    function onAddTeam(event) {
-        event.preventDefault();
-        const f = new FormData(event.target);
-        const memberIds = f.getAll('member');
-        if (memberIds.length < 2) { toast('Escolhe pelo menos 2 perfis.'); return; }
-        db.teams.push({ id: uid(), name: String(f.get('name')).trim(), memberIds });
-        save();
-        renderAll();
-    }
-
-    async function removeMember(id) {
-        if (!(await confirmDialog('Apagar este perfil e o seu histórico?'))) return;
+    function removeMember(id) {
         db.members = db.members.filter((m) => m.id !== id);
         db.log = db.log.filter((l) => l.m !== id);
         db.teams.forEach((t) => { t.memberIds = t.memberIds.filter((x) => x !== id); });
@@ -358,17 +343,93 @@
         renderAll();
     }
 
-    async function removeTeam(id) {
-        if (!(await confirmDialog('Apagar esta equipa?'))) return;
+    function addTeam(name, memberIds) {
+        name = clean(name, 24);
+        if (!name || memberIds.length < 2) return null;
+        db.teams.push({ id: uid(), name, memberIds });
+        save();
+        renderAll();
+        return true;
+    }
+
+    function removeTeam(id) {
         db.teams = db.teams.filter((t) => t.id !== id);
         save();
         renderAll();
     }
 
+    // ---------- Partilha: exportar / importar um perfil ----------
+    function exportCore(id) {
+        const m = memberById(id);
+        if (!m) return null;
+        return {
+            member: { id: m.id, name: m.name, role: m.role, color: safeColor(m.color), photo: safePhoto(m.photo), goal: clampGoal(m.goal) },
+            log: db.log.filter((l) => l.m === id),
+            custom,
+        };
+    }
+
+    function sanitizeLog(raw, memberId) {
+        if (!raw || typeof raw !== 'object') return null;
+        const num = (v, max) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= max ? n : 0; };
+        const id = String(raw.id || '');
+        const e = String(raw.e || '');
+        const t = Number(raw.t);
+        if (!ID.test(id) || !ID.test(e) || !Number.isFinite(t) || t < 0 || t > Date.now() + DAY) return null;
+        const out = { id, m: memberId, t: Math.round(t), e };
+        if (Array.isArray(raw.sets)) {
+            out.sets = raw.sets.slice(0, 50).map((x) => ({ r: num(x?.r, 1000), kg: num(x?.kg, 2000), min: num(x?.min, 1000) }));
+        } else {
+            out.s = num(raw.s, 100); out.r = num(raw.r, 1000); out.kg = num(raw.kg, 2000); out.min = num(raw.min, 1000);
+        }
+        if (raw.sid && ID.test(String(raw.sid))) out.sid = String(raw.sid);
+        if (raw.dur) out.dur = num(raw.dur, 1000);
+        if (raw.note) out.note = clean(raw.note, 300);
+        return out;
+    }
+
+    function importCore(bundle) {
+        const info = bundle?.member;
+        if (!info || !ID.test(String(info.id))) throw new Error('Perfil inválido');
+        const fields = {
+            name: clean(info.name, 24), role: ROLES.includes(info.role) ? info.role : 'Outro',
+            color: safeColor(info.color), photo: safePhoto(info.photo), goal: clampGoal(info.goal),
+        };
+        if (!fields.name) throw new Error('Perfil sem nome');
+
+        (Array.isArray(bundle.custom) ? bundle.custom : []).slice(0, 100).forEach((raw) => {
+            const id = String(raw?.id || '');
+            const name = clean(raw?.name, 40);
+            if (!/^c_\w{1,32}$/.test(id) || !name || !KINDS.includes(raw.kind) || CATALOG.some((x) => x.id === id)) return;
+            const ex = { id, name, muscle: clean(raw.muscle, 24) || 'Outro', equip: clean(raw.equip, 24) || 'Peso corporal',
+                kind: raw.kind, k: raw.kind === 'time' ? 5 : 1, note: clean(raw.note, 300) };
+            custom.push(ex);
+            CATALOG.push({ ...ex, custom: true });
+        });
+        saveCustom();
+
+        let m = memberById(info.id);
+        const isNew = !m;
+        if (m) Object.assign(m, fields);
+        else { m = { id: String(info.id), ...fields }; db.members.push(m); }
+
+        const have = new Set(db.log.map((l) => l.id));
+        let added = 0;
+        (Array.isArray(bundle.log) ? bundle.log : []).slice(0, 20000).forEach((raw) => {
+            const l = sanitizeLog(raw, m.id);
+            if (!l || have.has(l.id)) return;
+            db.log.push(l);
+            have.add(l.id);
+            added++;
+        });
+        db.log.sort((x, y) => x.t - y.t);
+        save();
+        renderAll();
+        return { id: m.id, name: m.name, isNew, added };
+    }
+
     function renderAll() {
         renderTrain();
-        renderRank();
-        renderProfiles();
         document.dispatchEvent(new Event('fit:change'));
     }
 
@@ -376,9 +437,13 @@
         h, svg, field, select, toast, confirmDialog, points, uid, lineChart,
         fmtDate, fmtShort, fmtNum, metric: (kind) => METRICS[kind] || METRICS.reps,
         series, best, valueOf, addExercise, removeExercise,
+        avatar, processPhoto, safeColor, multiChart, data: () => db, roles: ROLES, dayMs: DAY,
+        me, setMe, addMember, updateMember, removeMember, addTeam, removeTeam, exportCore, importCore,
+        member: memberById,
         exercises: CATALOG,
         byId: exerciseById,
         members: () => db.members,
+        teams: () => db.teams,
         addLogs(member, entries) {
             entries.forEach((e) => db.log.push({ id: uid(), m: member, t: Date.now(), ...e }));
             save();
