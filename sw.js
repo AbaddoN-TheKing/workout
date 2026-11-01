@@ -1,11 +1,13 @@
-const CACHE_VERSION = 5;
+const CACHE_VERSION = 6;
 const CACHE_NAME = `bf-qr-v${CACHE_VERSION}`;
 const ASSETS = [
     './',
     './index.html',
     './style.css',
     './script.js',
+    './exercises.js',
     './workout.js',
+    './planner.js',
     './nav.js',
     './manifest.json',
     './icon.svg',
