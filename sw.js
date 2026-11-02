@@ -1,4 +1,4 @@
-const CACHE_VERSION = 9;
+const CACHE_VERSION = 10;
 const CACHE_NAME = `fitcrew-v${CACHE_VERSION}`;
 const ASSETS = [
     './',
@@ -12,6 +12,10 @@ const ASSETS = [
     './library.js',
     './measures.js',
     './ranking.js',
+    './programs.js',
+    './generator.js',
+    './insights.js',
+    './tools.js',
     './share.js',
     './profiles.js',
     './install.js',

@@ -45,6 +45,24 @@
     <main class="app-main">
         <section data-view="treinos" class="view" id="view-train"><div id="sessionBox"></div><div id="logBox"></div></section>
         <section data-view="plano" class="view" id="view-plan"></section>
+        <section data-view="mais" class="view" id="view-more">
+            <div class="panel">
+                <h2>Mais</h2>
+                <div class="hub-grid">
+                    <a class="hub-tile" href="#gerador"><span>🎲</span><b>Gerar treino</b><small>Equipamento → músculos → treino</small></a>
+                    <a class="hub-tile" href="#programas"><span>📋</span><b>Programas</b><small>Planos prontos de várias semanas</small></a>
+                    <a class="hub-tile" href="#estatisticas"><span>📊</span><b>Estatísticas</b><small>Progresso, calendário e recordes</small></a>
+                    <a class="hub-tile" href="#ferramentas"><span>🧮</span><b>Ferramentas</b><small>Calorias, 1RM, discos, IMC…</small></a>
+                    <a class="hub-tile" href="#exercicios"><span>📚</span><b>Exercícios</b><small>Biblioteca com dicas e evolução</small></a>
+                    <a class="hub-tile" href="#medidas"><span>📏</span><b>Medidas</b><small>Peso, gordura e perímetros</small></a>
+                    <a class="hub-tile" href="#qr"><span>🔳</span><b>QR Basic-Fit</b><small>Entrada rápida no ginásio</small></a>
+                </div>
+            </div>
+        </section>
+        <section data-view="gerador" class="view" id="view-generator"></section>
+        <section data-view="programas" class="view" id="view-programs"></section>
+        <section data-view="estatisticas" class="view" id="view-insights"></section>
+        <section data-view="ferramentas" class="view" id="view-tools"></section>
         <section data-view="exercicios" class="view" id="view-library"></section>
         <section data-view="medidas" class="view" id="view-measures"></section>
         <section data-view="ranking" class="view" id="view-rank"></section>
@@ -132,11 +150,9 @@
     <nav class="app-nav" id="appNav" aria-label="Secções">
         <a href="#treinos"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11" /></svg><span>Treinar</span></a>
         <a href="#plano"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2.5" /><path d="M3 9.5h18M8 3v3M16 3v3" /></svg><span>Plano</span></a>
-        <a href="#exercicios"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10" /></svg><span>Exercícios</span></a>
-        <a href="#medidas"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4" /></svg><span>Medidas</span></a>
         <a href="#ranking"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" /></svg><span>Ranking</span></a>
         <a href="#perfis"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20.5v-1a6 6 0 0 1 12 0v1M16 4.6a3.5 3.5 0 0 1 0 6.8M21.5 20.5v-1a6 6 0 0 0-4-5.6" /></svg><span>Perfis</span></a>
-        <a href="#qr"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="1" /><rect x="13.5" y="3.5" width="7" height="7" rx="1" /><rect x="3.5" y="13.5" width="7" height="7" rx="1" /><path d="M14 14h2.5v2.5H14zM19 14v6.5h-5" /></svg><span>QR</span></a>
+        <a href="#mais"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="7" height="7" rx="2" /><rect x="13.5" y="3.5" width="7" height="7" rx="2" /><rect x="3.5" y="13.5" width="7" height="7" rx="2" /><rect x="13.5" y="13.5" width="7" height="7" rx="2" /></svg><span>Mais</span></a>
     </nav>
 
     <div id="helpModal" class="modal-overlay" onclick="handleOverlayClick(event)">
@@ -199,6 +215,10 @@
     <script src="library.js"></script>
     <script src="measures.js"></script>
     <script src="ranking.js"></script>
+    <script src="programs.js"></script>
+    <script src="generator.js"></script>
+    <script src="insights.js"></script>
+    <script src="tools.js"></script>
     <script src="share.js"></script>
     <script src="profiles.js"></script>
     <script src="install.js"></script>

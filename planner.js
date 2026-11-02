@@ -289,7 +289,10 @@
                 ? h('ul', { class: 'list' }, plan.map((p) => h('li', {},
                     h('div', { class: 'grow' }, exercise(p.e).name, h('small', {}, planLabel(p))))))
                 : h('p', { class: 'empty' }, 'Sem plano para hoje. Cria-o no separador Plano ou começa um treino livre.'),
-            h('button', { type: 'button', onclick: () => startSession(plan) }, plan.length ? 'Começar treino' : 'Treino livre'));
+            h('button', { type: 'button', onclick: () => startSession(plan) }, plan.length ? 'Começar treino' : 'Treino livre'),
+            h('div', { class: 'row' },
+                h('a', { class: 'btn secondary', href: '#gerador' }, '🎲 Gerar treino'),
+                h('a', { class: 'btn secondary', href: '#programas' }, '📋 Programas')));
     }
 
     function renderSession() {
@@ -351,6 +354,19 @@
             ((plans[member] ||= {})[day] ||= []).push({ e: id, s, r });
             savePlans();
             renderAll();
+        },
+        startWith(member, items) {
+            const valid = (items || []).filter((p) => exercise(p.e));
+            if (!valid.length || !Fit.member(member)) return;
+            const go = () => {
+                ui.member = member;
+                session = { m: member, start: Date.now(), note: '', items: valid.map((p) => newItem(member, p.e, p.s, p.r)) };
+                saveSession();
+                renderSession();
+                location.hash = '#treinos';
+            };
+            if (session) confirmDialog('Já tens um treino a decorrer. Substituir por este?').then((ok) => { if (ok) go(); });
+            else go();
         },
         exportFor(member) {
             const days = plans[member] || {};

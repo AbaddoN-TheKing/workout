@@ -1,18 +1,29 @@
-// Navegação por separadores (hash): #treinos (início), #plano, #exercicios, #medidas, #ranking, #perfis, #qr
+// Navegação por separadores (hash). Início: #treinos. O separador "Mais" agrupa as restantes secções.
 (() => {
     'use strict';
+    const MORE = ['mais', 'gerador', 'programas', 'estatisticas', 'ferramentas', 'exercicios', 'medidas', 'qr'];
     const views = [...document.querySelectorAll('[data-view]')];
     const links = [...document.querySelectorAll('#appNav a')];
     const names = views.map((v) => v.dataset.view);
 
+    const back = document.createElement('a');
+    back.id = 'backLink';
+    back.className = 'back-link';
+    back.href = '#mais';
+    back.textContent = '← Mais';
+    back.hidden = true;
+    views[0].parentElement.prepend(back);
+
     function show() {
         const name = location.hash.slice(1);
         const active = names.includes(name) ? name : 'treinos';
+        const group = MORE.includes(active) ? 'mais' : active;
         views.forEach((v) => { v.hidden = v.dataset.view !== active; });
         links.forEach((a) => {
-            if (a.getAttribute('href') === `#${active}`) a.setAttribute('aria-current', 'page');
+            if (a.getAttribute('href') === `#${group}`) a.setAttribute('aria-current', 'page');
             else a.removeAttribute('aria-current');
         });
+        back.hidden = !(MORE.includes(active) && active !== 'mais');
         if (active !== show.last) window.scrollTo(0, 0);
         show.last = active;
         document.dispatchEvent(new CustomEvent('viewchange', { detail: active }));
