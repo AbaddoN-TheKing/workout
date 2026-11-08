@@ -22,7 +22,7 @@
     function bundleFor(id) {
         const core = Fit.exportCore(id);
         if (!core) return null;
-        return { ...core, plan: window.Plan.exportFor(id), measures: window.Measures.exportFor(id) };
+        return { ...core, plan: window.Plan.exportFor(id), measures: window.Measures.exportFor(id), supplements: window.Supps.exportFor(id) };
     }
 
     const wrap = (bundles) => ({ app: 'fitcrew', v: 1, exported: Date.now(), bundles });
@@ -44,14 +44,14 @@
         const file = new File([json(bundles)], `fitcrew-${name}.json`, { type: 'application/json' });
         try {
             if (navigator.canShare?.({ files: [file] })) {
-                await navigator.share({ files: [file], title: 'Fit Crew', text: 'Importa o meu perfil no Fit Crew (separador Perfis → Importar).' });
+                await navigator.share({ files: [file], title: 'Fit Crew', text: t('Importa o meu perfil no Fit Crew (separador Perfis → Importar).') });
                 return;
             }
         } catch (err) {
             if (err?.name === 'AbortError') return;
         }
         download(file);
-        Fit.toast('Ficheiro guardado. Envia-o por mensagem!');
+        Fit.toast(t('Ficheiro guardado. Envia-o por mensagem!'));
     }
 
     function shareProfile(id) {
@@ -70,9 +70,9 @@
         const code = PREFIX + toB64(json([b]));
         try {
             await navigator.clipboard.writeText(code);
-            Fit.toast('Código copiado! Cola-o numa mensagem.');
+            Fit.toast(t('Código copiado! Cola-o numa mensagem.'));
         } catch {
-            Fit.toast('Não foi possível copiar. Usa "Partilhar".');
+            Fit.toast(t('Não foi possível copiar. Usa "Partilhar".'));
         }
     }
 
@@ -94,14 +94,14 @@
         return bundles.map((b) => {
             const exists = !!Fit.member(b?.member?.id);
             const fresh = (Array.isArray(b?.log) ? b.log : []).filter((l) => l && !have.has(l.id)).length;
-            return `${exists ? '↻' : '＋'} ${String(b?.member?.name || '?').slice(0, 24)} (${fresh} treino${fresh === 1 ? '' : 's'} novo${fresh === 1 ? '' : 's'})`;
+            return `${exists ? '↻' : '＋'} ${String(b?.member?.name || '?').slice(0, 24)} (${tn(fresh, '{n} treino novo', '{n} treinos novos')})`;
         });
     }
 
     async function importText(text) {
         let bundles;
-        try { bundles = parse(text); } catch { Fit.toast('Ficheiro ou código inválido.'); return false; }
-        const ok = await Fit.confirmDialog(`Importar?\n${describe(bundles).join('\n')}\n\n＋ novo perfil · ↻ atualizar perfil existente`);
+        try { bundles = parse(text); } catch { Fit.toast(t('Ficheiro ou código inválido.')); return false; }
+        const ok = await Fit.confirmDialog(`${t('Importar?')}\n${describe(bundles).join('\n')}\n\n${t('＋ novo perfil · ↻ atualizar perfil existente')}`);
         if (!ok) return false;
         const done = [];
         for (const b of bundles) {
@@ -109,17 +109,18 @@
                 const res = Fit.importCore(b);
                 window.Plan.importFor(res.id, b.plan);
                 window.Measures.importFor(res.id, b.measures);
+                window.Supps.importFor(res.id, b.supplements);
                 done.push(res.name);
             } catch { /* perfil inválido: ignora */ }
         }
         document.dispatchEvent(new Event('fit:change'));
-        Fit.toast(done.length ? `Importado: ${done.join(', ')} 💪` : 'Nada importado.');
+        Fit.toast(done.length ? t('Importado: {names} 💪', { names: done.join(', ') }) : t('Nada importado.'));
         return done.length > 0;
     }
 
     async function importFile(file) {
         if (!file) return false;
-        if (file.size > MAX_BYTES) { Fit.toast('Ficheiro demasiado grande.'); return false; }
+        if (file.size > MAX_BYTES) { Fit.toast(t('Ficheiro demasiado grande.')); return false; }
         return importText(await file.text());
     }
 

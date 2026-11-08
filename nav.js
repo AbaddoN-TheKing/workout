@@ -1,7 +1,7 @@
 // Navegação por separadores (hash). Início: #treinos. O separador "Mais" agrupa as restantes secções.
 (() => {
     'use strict';
-    const MORE = ['mais', 'gerador', 'programas', 'estatisticas', 'ferramentas', 'exercicios', 'medidas', 'qr'];
+    const MORE = ['mais', 'gerador', 'programas', 'desportos', 'suplementos', 'estatisticas', 'ferramentas', 'exercicios', 'medidas', 'qr'];
     const views = [...document.querySelectorAll('[data-view]')];
     const links = [...document.querySelectorAll('#appNav a')];
     const names = views.map((v) => v.dataset.view);
@@ -10,7 +10,7 @@
     back.id = 'backLink';
     back.className = 'back-link';
     back.href = '#mais';
-    back.textContent = '← Mais';
+    back.textContent = t('← Mais');
     back.hidden = true;
     views[0].parentElement.prepend(back);
 

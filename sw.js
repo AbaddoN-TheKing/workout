@@ -1,11 +1,17 @@
-const CACHE_VERSION = 10;
+const CACHE_VERSION = 11;
 const CACHE_NAME = `fitcrew-v${CACHE_VERSION}`;
 const ASSETS = [
     './',
     './index.html',
     './style.css',
     './script.js',
+    './i18n.js',
+    './i18n/ui.js',
+    './i18n/exercises.js',
+    './i18n/tips.js',
+    './i18n/variants.js',
     './exercises.js',
+    './exercises-extra.js',
     './workout.js',
     './stats.js',
     './planner.js',
@@ -14,6 +20,8 @@ const ASSETS = [
     './ranking.js',
     './programs.js',
     './generator.js',
+    './sports.js',
+    './supplements.js',
     './insights.js',
     './tools.js',
     './share.js',

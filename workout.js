@@ -124,9 +124,9 @@
 
     // ---------- Séries, recordes e gráficos ----------
     const METRICS = {
-        load: { label: '1RM estimado', unit: 'kg' },
-        reps: { label: 'Máx. reps numa série', unit: 'reps' },
-        time: { label: 'Tempo no dia', unit: 'min' },
+        load: { label: t('1RM estimado'), unit: 'kg' },
+        reps: { label: t('Máx. reps numa série'), unit: t('reps') },
+        time: { label: t('Tempo no dia'), unit: t('min') },
     };
 
     function setsOf(l, ex) {
@@ -157,8 +157,8 @@
     }
 
     const best = (member, exId) => series(member, exId).reduce((b, p) => (!b || p.v > b.v ? p : b), null);
-    const fmtDate = (t) => new Date(t).toLocaleDateString('pt-PT', { weekday: 'short', day: 'numeric', month: 'short' });
-    const fmtShort = (t) => new Date(t).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit' });
+    const fmtDate = (t) => new Date(t).toLocaleDateString(I18n.locale, { weekday: 'short', day: 'numeric', month: 'short' });
+    const fmtShort = (t) => new Date(t).toLocaleDateString(I18n.locale, { day: '2-digit', month: '2-digit' });
     const fmtNum = (v) => String(Math.round(v * 10) / 10);
 
     const SVGNS = 'http://www.w3.org/2000/svg';
@@ -173,7 +173,7 @@
     function multiChart(list, unit = '') {
         const all = list.flatMap((l) => l.points);
         if (all.length < 2) {
-            return h('p', { class: 'empty' }, all.length ? 'Precisas de 2 registos para ver o gráfico.' : 'Sem dados ainda.');
+            return h('p', { class: 'empty' }, all.length ? t('Precisas de 2 registos para ver o gráfico.') : t('Sem dados ainda.'));
         }
         const W = 320, H = 150, L = 38, R = 12, T = 12, B = 24;
         const xs = all.map((p) => p.t);
@@ -185,7 +185,7 @@
         const X = (t) => L + (x1 === x0 ? 0.5 : (t - x0) / (x1 - x0)) * (W - L - R);
         const Y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
         const label = { style: 'fill:var(--text-sub);font-size:10px' };
-        const el = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', style: 'width:100%;height:auto', 'aria-label': 'Gráfico de evolução' },
+        const el = svg('svg', { viewBox: `0 0 ${W} ${H}`, role: 'img', style: 'width:100%;height:auto', 'aria-label': t('Gráfico de evolução') },
             svg('line', { x1: L, x2: W - R, y1: Y(y1), y2: Y(y1), style: 'stroke:var(--line)' }),
             svg('line', { x1: L, x2: W - R, y1: Y(y0), y2: Y(y0), style: 'stroke:var(--line)' }),
             svg('text', { ...label, x: L - 4, y: Y(y1) + 3, 'text-anchor': 'end' }, fmtNum(y1)),
@@ -210,12 +210,12 @@
     // ---------- Treinos (histórico por sessão) ----------
     function logDetail(l, ex) {
         if (l.sets) {
-            if (ex.kind === 'time') return `${l.sets.reduce((a, x) => a + x.min, 0)} min`;
+            if (ex.kind === 'time') return `${l.sets.reduce((a, x) => a + x.min, 0)} ${t('min')}`;
             const top = l.sets.reduce((b, x) => (x.kg > b.kg || (x.kg === b.kg && x.r > b.r) ? x : b), l.sets[0]);
-            const desc = `${l.sets.length} séries`;
-            return ex.kind === 'load' ? `${desc} · melhor ${top.kg} kg × ${top.r}` : `${desc} · melhor ${top.r} reps`;
+            const desc = tn(l.sets.length, '{n} série', '{n} séries');
+            return ex.kind === 'load' ? `${desc} · ${t('melhor {kg} kg × {r}', { kg: top.kg, r: top.r })}` : `${desc} · ${t('melhor {r} reps', { r: top.r })}`;
         }
-        return ex.kind === 'time' ? `${l.min} min` : `${l.s}×${l.r}${ex.kind === 'load' ? ` · ${l.kg} kg` : ''}`;
+        return ex.kind === 'time' ? `${l.min} ${t('min')}` : `${l.s}×${l.r}${ex.kind === 'load' ? ` · ${l.kg} kg` : ''}`;
     }
 
     function groups() {
@@ -231,12 +231,12 @@
     function sessionPanel(g) {
         const m = memberById(g.m);
         const total = g.items.reduce((sum, l) => sum + points(l), 0);
-        const meta = [fmtDate(g.t), g.dur ? `${g.dur} min` : null].filter(Boolean).join(' · ');
+        const meta = [fmtDate(g.t), g.dur ? `${g.dur} ${t('min')}` : null].filter(Boolean).join(' · ');
         return h('div', { class: 'panel' },
             h('div', { class: 'row between' },
                 h('div', { class: 'row center' }, dot(m), h('div', {}, h('strong', {}, m.name), h('small', { class: 'muted' }, meta))),
                 h('div', { class: 'row center' }, h('b', {}, `+${total}`),
-                    h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Apagar treino', onclick: () => removeSession(g) }, '×'))),
+                    h('button', { type: 'button', class: 'btn-x', 'aria-label': t('Apagar treino'), onclick: () => removeSession(g) }, '×'))),
             h('ul', { class: 'list' }, g.items.map((l) => {
                 const e = exerciseById(l.e);
                 return e ? h('li', {}, h('div', { class: 'grow' }, e.name, h('small', {}, logDetail(l, e))), h('b', {}, `+${points(l)}`)) : null;
@@ -249,18 +249,18 @@
         root.replaceChildren();
         const all = groups().filter((g) => memberById(g.m));
         if (!all.length) {
-            root.append(h('div', { class: 'panel' }, h('h2', {}, 'Histórico'), h('p', { class: 'empty' }, 'Ainda sem treinos.')));
+            root.append(h('div', { class: 'panel' }, h('h2', {}, t('Histórico')), h('p', { class: 'empty' }, t('Ainda sem treinos.'))));
             return;
         }
         (ui.more ? all : all.slice(0, 5)).forEach((g) => root.append(sessionPanel(g)));
         if (all.length > 5) {
             root.append(h('button', { type: 'button', class: 'secondary', onclick: () => { ui.more = !ui.more; renderTrain(); } },
-                ui.more ? 'Ver menos' : `Ver todos (${all.length})`));
+                ui.more ? t('Ver menos') : t('Ver todos ({n})', { n: all.length })));
         }
     }
 
     async function removeSession(g) {
-        if (!(await confirmDialog('Apagar este treino do histórico?'))) return;
+        if (!(await confirmDialog(t('Apagar este treino do histórico?')))) return;
         const ids = new Set(g.items.map((l) => l.id));
         db.log = db.log.filter((l) => !ids.has(l.id));
         save();
@@ -270,8 +270,8 @@
     // ---------- Exercícios personalizados ----------
     function addExercise({ name, muscle, equip, kind, note }) {
         name = String(name || '').trim().slice(0, 40);
-        if (name.length < 2) { toast('Dá um nome ao exercício.'); return null; }
-        if (CATALOG.some((e) => e.name.toLowerCase() === name.toLowerCase())) { toast('Já existe um exercício com esse nome.'); return null; }
+        if (name.length < 2) { toast(t('Dá um nome ao exercício.')); return null; }
+        if (CATALOG.some((e) => e.name.toLowerCase() === name.toLowerCase())) { toast(t('Já existe um exercício com esse nome.')); return null; }
         const ex = {
             id: `c_${uid().replace(/-/g, '').slice(0, 10)}`,
             name,

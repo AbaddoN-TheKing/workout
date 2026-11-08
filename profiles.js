@@ -15,7 +15,7 @@
             const file = input.files?.[0];
             input.remove();
             if (!file) return;
-            try { onPhoto(await Fit.processPhoto(file)); } catch { toast('Não foi possível usar essa imagem.'); }
+            try { onPhoto(await Fit.processPhoto(file)); } catch { toast(t('Não foi possível usar essa imagem.')); }
         });
         document.body.append(input);
         input.click();
@@ -32,36 +32,36 @@
 
         return h('div', { class: 'panel profile-card' },
             h('div', { class: 'pc-head' },
-                h('button', { type: 'button', class: 'avatar-btn', 'aria-label': 'Mudar foto', onclick: () => pickPhoto((photo) => Fit.updateMember(m.id, { photo })) },
+                h('button', { type: 'button', class: 'avatar-btn', 'aria-label': t('Mudar foto'), onclick: () => pickPhoto((photo) => Fit.updateMember(m.id, { photo })) },
                     Fit.avatar(m, 68), h('span', { class: 'cam' }, '📷')),
                 h('div', { class: 'grow' },
-                    h('div', { class: 'pc-name' }, m.name, isMe ? h('span', { class: 'chip me' }, 'EU') : null),
-                    h('small', { class: 'muted' }, `${m.role !== 'Outro' ? `${m.role} · ` : ''}Nível ${lv.lv} ${lv.title}`),
+                    h('div', { class: 'pc-name' }, m.name, isMe ? h('span', { class: 'chip me' }, t('EU')) : null),
+                    h('small', { class: 'muted' }, `${m.role !== 'Outro' ? `${t(m.role)} · ` : ''}${t('Nível {lv}', { lv: lv.lv })} ${lv.title}`),
                     h('div', { class: 'xp' }, h('i', { style: `width:${Math.round(lv.pct * 100)}%` })),
-                    h('small', { class: 'muted' }, `${lv.next} pts para o próximo nível`))),
+                    h('small', { class: 'muted' }, t('{n} pts para o próximo nível', { n: lv.next })))),
             h('div', { class: 'hero-stats' },
-                h('div', {}, h('b', {}, String(total.points)), h('small', {}, 'pontos')),
-                h('div', {}, h('b', {}, String(total.sessions)), h('small', {}, 'treinos')),
-                h('div', {}, h('b', {}, `🔥 ${st.current}`), h('small', {}, 'sequência'))),
+                h('div', {}, h('b', {}, String(total.points)), h('small', {}, t('pontos'))),
+                h('div', {}, h('b', {}, String(total.sessions)), h('small', {}, t('treinos'))),
+                h('div', {}, h('b', {}, `🔥 ${st.current}`), h('small', {}, t('sequência')))),
             h('div', { class: 'badges' }, badges.map((b) =>
                 h('span', { class: `bdg${b.on ? ' on' : ''}`, title: b.label }, b.icon)),
-                h('small', { class: 'muted' }, `${earned}/${badges.length} conquistas`)),
-            h('label', { class: 'goal-row' }, h('span', {}, 'Meta semanal'),
-                select('goal', [1, 2, 3, 4, 5, 6, 7].map((n) => [String(n), `${n} ${n === 1 ? 'dia' : 'dias'}`]), String(m.goal || 3),
+                h('small', { class: 'muted' }, t('{earned}/{total} conquistas', { earned, total: badges.length }))),
+            h('label', { class: 'goal-row' }, h('span', {}, t('Meta semanal')),
+                select('goal', [1, 2, 3, 4, 5, 6, 7].map((n) => [String(n), tn(n, '{n} dia', '{n} dias')]), String(m.goal || 3),
                     (v) => Fit.updateMember(m.id, { goal: Number(v) }))),
             h('div', { class: 'actions' },
-                h('button', { type: 'button', onclick: () => Share.shareProfile(m.id) }, '📤 Partilhar'),
-                h('button', { type: 'button', class: 'secondary', onclick: () => Share.copyCode(m.id) }, '📋 Código'),
-                isMe ? null : h('button', { type: 'button', class: 'secondary', onclick: () => { Fit.setMe(m.id); toast(`${m.name} é o teu perfil`); } }, '⭐ Sou eu'),
+                h('button', { type: 'button', onclick: () => Share.shareProfile(m.id) }, t('📤 Partilhar')),
+                h('button', { type: 'button', class: 'secondary', onclick: () => Share.copyCode(m.id) }, t('📋 Código')),
+                isMe ? null : h('button', { type: 'button', class: 'secondary', onclick: () => { Fit.setMe(m.id); toast(t('{name} é o teu perfil', { name: m.name })); } }, t('⭐ Sou eu')),
                 h('button', { type: 'button', class: 'secondary', onclick: async () => {
-                    const name = await ask('Novo nome:', m.name);
+                    const name = await ask(t('Novo nome:'), m.name);
                     if (name) Fit.updateMember(m.id, { name });
-                } }, '✏️ Nome'),
-                m.photo ? h('button', { type: 'button', class: 'secondary', onclick: () => Fit.updateMember(m.id, { photo: '' }) }, 'Sem foto') : null,
+                } }, t('✏️ Nome')),
+                m.photo ? h('button', { type: 'button', class: 'secondary', onclick: () => Fit.updateMember(m.id, { photo: '' }) }, t('Sem foto')) : null,
                 h('button', { type: 'button', class: 'secondary danger', onclick: async () => {
-                    if (!(await confirmDialog(`Apagar ${m.name} e todo o histórico?`))) return;
+                    if (!(await confirmDialog(t('Apagar {name} e todo o histórico?', { name: m.name })))) return;
                     Fit.removeMember(m.id);
-                } }, '🗑️ Apagar')));
+                } }, t('🗑️ Apagar'))));
     }
 
     // ---------- Novo perfil ----------
@@ -78,21 +78,21 @@
             const m = Fit.addMember({ name: f.get('name'), role: f.get('role'), color: f.get('color'), photo: ui.photo });
             if (!m) return;
             ui.photo = '';
-            toast(`${m.name} entrou na equipa! 💪`);
+            toast(t('{name} entrou na equipa! 💪', { name: m.name }));
         } },
-            h('h2', {}, 'Novo perfil'),
+            h('h2', {}, t('Novo perfil')),
             h('div', { class: 'photo-row' }, preview,
-                h('button', { type: 'button', class: 'secondary', onclick: () => pickPhoto((photo) => { ui.photo = photo; paint(); }) }, '📷 Escolher foto')),
-            field('Nome', h('input', { name: 'name', required: true, maxlength: 24, autocomplete: 'off', placeholder: 'Ex: Ana' })),
+                h('button', { type: 'button', class: 'secondary', onclick: () => pickPhoto((photo) => { ui.photo = photo; paint(); }) }, t('📷 Escolher foto'))),
+            field(t('Nome'), h('input', { name: 'name', required: true, maxlength: 24, autocomplete: 'off', placeholder: t('Ex: Ana') })),
             h('div', { class: 'row' },
-                field('Tipo', select('role', Fit.roles.map((r) => [r, r]), 'Outro', () => {})),
-                field('Cor', h('input', { name: 'color', type: 'color', value: color }))),
-            h('button', { type: 'submit' }, 'Criar perfil'));
+                field(t('Tipo'), select('role', Fit.roles.map((r) => [r, t(r)]), 'Outro', () => {})),
+                field(t('Cor'), h('input', { name: 'color', type: 'color', value: color }))),
+            h('button', { type: 'submit' }, t('Criar perfil')));
     }
 
     // ---------- Importar ----------
     function importPanel() {
-        const code = h('textarea', { rows: 3, placeholder: 'Cola aqui o código FITCREW1:…', 'aria-label': 'Código do perfil' });
+        const code = h('textarea', { rows: 3, placeholder: t('Cola aqui o código FITCREW1:…'), 'aria-label': t('Código do perfil') });
         const fileInput = h('input', { type: 'file', accept: '.json,application/json,text/plain', class: 'hidden' });
         fileInput.addEventListener('change', async () => {
             const ok = await Share.importFile(fileInput.files?.[0]);
@@ -100,15 +100,15 @@
             if (ok) code.value = '';
         });
         return h('div', { class: 'panel' },
-            h('h2', {}, 'Importar perfil'),
-            h('p', { class: 'muted small' }, 'Recebeste o perfil de alguém da família por mensagem? Escolhe o ficheiro ou cola o código para entrarem no ranking.'),
+            h('h2', {}, t('Importar perfil')),
+            h('p', { class: 'muted small' }, t('Recebeste o perfil de alguém da família por mensagem? Escolhe o ficheiro ou cola o código para entrarem no ranking.')),
             fileInput,
-            h('button', { type: 'button', onclick: () => fileInput.click() }, '📥 Escolher ficheiro'),
+            h('button', { type: 'button', onclick: () => fileInput.click() }, t('📥 Escolher ficheiro')),
             code,
             h('button', { type: 'button', class: 'secondary', onclick: async () => {
                 if (await Share.importText(code.value)) code.value = '';
-            } }, 'Importar código'),
-            Fit.members().length ? h('button', { type: 'button', class: 'secondary', onclick: () => Share.shareAll() }, '💾 Exportar todos (cópia de segurança)') : null);
+            } }, t('Importar código')),
+            Fit.members().length ? h('button', { type: 'button', class: 'secondary', onclick: () => Share.shareAll() }, t('💾 Exportar todos (cópia de segurança)')) : null);
     }
 
     // ---------- Equipas / casais ----------
@@ -118,24 +118,24 @@
             event.preventDefault();
             const f = new FormData(event.target);
             const ids = f.getAll('member');
-            if (ids.length < 2) { toast('Escolhe pelo menos 2 perfis.'); return; }
+            if (ids.length < 2) { toast(t('Escolhe pelo menos 2 perfis.')); return; }
             Fit.addTeam(f.get('name'), ids);
         } },
-            h('h2', {}, 'Novo duelo'),
-            h('p', { class: 'muted small' }, 'Cria um duelo entre casal, irmãos ou amigos. Aparece no Ranking.'),
-            field('Nome', h('input', { name: 'name', required: true, maxlength: 24, autocomplete: 'off', placeholder: 'Ex: Casal Fit' })),
+            h('h2', {}, t('Novo duelo')),
+            h('p', { class: 'muted small' }, t('Cria um duelo entre casal, irmãos ou amigos. Aparece no Ranking.')),
+            field(t('Nome'), h('input', { name: 'name', required: true, maxlength: 24, autocomplete: 'off', placeholder: t('Ex: Casal Fit') })),
             h('div', { class: 'checks' }, Fit.members().map((m) =>
                 h('label', {}, h('input', { type: 'checkbox', name: 'member', value: m.id }), Fit.avatar(m, 26), m.name))),
-            h('button', { type: 'submit' }, 'Criar duelo'));
+            h('button', { type: 'submit' }, t('Criar duelo')));
     }
 
     function teamList() {
         if (!Fit.teams().length) return null;
-        return h('div', { class: 'panel' }, h('h2', {}, 'Duelos'), h('ul', { class: 'list' }, Fit.teams().map((t) =>
-            h('li', {}, h('div', { class: 'grow' }, h('strong', {}, t.name),
-                h('small', {}, t.memberIds.map((id) => Fit.member(id)?.name).filter(Boolean).join(' vs '))),
-                h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Apagar', onclick: async () => {
-                    if (await confirmDialog('Apagar este duelo?')) Fit.removeTeam(t.id);
+        return h('div', { class: 'panel' }, h('h2', {}, t('Duelos')), h('ul', { class: 'list' }, Fit.teams().map((team) =>
+            h('li', {}, h('div', { class: 'grow' }, h('strong', {}, team.name),
+                h('small', {}, team.memberIds.map((id) => Fit.member(id)?.name).filter(Boolean).join(' vs '))),
+                h('button', { type: 'button', class: 'btn-x', 'aria-label': t('Apagar'), onclick: async () => {
+                    if (await confirmDialog(t('Apagar este duelo?'))) Fit.removeTeam(team.id);
                 } }, '×')))));
     }
 
@@ -145,8 +145,8 @@
         const members = Fit.members();
         root.append(...[
             members.length ? null : h('div', { class: 'panel cta' },
-                h('h2', {}, 'Monta a tua equipa'),
-                h('p', { class: 'muted' }, 'Cria o teu perfil e convida a família: cada um importa o perfil dos outros e o ranking junta todos.')),
+                h('h2', {}, t('Monta a tua equipa')),
+                h('p', { class: 'muted' }, t('Cria o teu perfil e convida a família: cada um importa o perfil dos outros e o ranking junta todos.'))),
             ...members.map(card),
             newForm(),
             importPanel(),

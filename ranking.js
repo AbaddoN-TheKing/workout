@@ -4,16 +4,16 @@
     const { h, field, select } = window.Fit;
 
     const METRICS = {
-        points: { label: 'Pontos', fmt: (v) => `${v} pts` },
-        sessions: { label: 'Treinos', fmt: (v) => `${v} ${v === 1 ? 'dia' : 'dias'}` },
-        streak: { label: 'Sequência', fmt: (v) => `🔥 ${v}` },
-        volume: { label: 'Volume', fmt: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)} t` : `${v} kg`) },
+        points: { label: t('Pontos'), fmt: (v) => `${v} ${t('pts')}` },
+        sessions: { label: t('Treinos'), fmt: (v) => tn(v, '{n} dia', '{n} dias') },
+        streak: { label: t('Sequência'), fmt: (v) => `🔥 ${v}` },
+        volume: { label: t('Volume'), fmt: (v) => (v >= 1000 ? `${(v / 1000).toFixed(1)} t` : `${v} kg`) },
     };
-    const PERIODS = [['week', '7 dias'], ['month', '30 dias'], ['all', 'Sempre']];
+    const PERIODS = [['week', t('7 dias')], ['month', t('30 dias')], ['all', t('Sempre')]];
     const ui = { metric: 'points', period: 'week', cmp: null, exercise: '' };
 
-    const seg = (items, current, onPick) => h('div', { class: 'seg' }, items.map(([v, t]) =>
-        h('button', { type: 'button', class: current === v ? 'on' : '', onclick: () => onPick(v) }, t)));
+    const seg = (items, current, onPick) => h('div', { class: 'seg' }, items.map(([v, text]) =>
+        h('button', { type: 'button', class: current === v ? 'on' : '', onclick: () => onPick(v) }, text)));
 
     // ---------- Pódio e lista ----------
     function podium(rows, fmt) {
@@ -46,7 +46,7 @@
         const { fmt } = METRICS[ui.metric];
         const me = Fit.me();
         return h('div', { class: 'panel' },
-            h('h2', {}, 'Classificação'),
+            h('h2', {}, t('Classificação')),
             seg(Object.entries(METRICS).map(([k, v]) => [k, v.label]), ui.metric, (v) => { ui.metric = v; renderRank(); }),
             ui.metric === 'streak' ? null : seg(PERIODS, ui.period, (v) => { ui.period = v; renderRank(); }),
             me ? h('p', { class: 'lead' }, Fit.rankMessage(me)) : null,
@@ -59,9 +59,9 @@
         const rows = Fit.members().map((m) => ({ m, grid: Fit.weekGrid(m.id) }));
         const today = (new Date().getDay() + 6) % 7;
         return h('div', { class: 'panel' },
-            h('h2', {}, 'Semana da família'),
-            h('div', { class: 'wk-head' }, h('span', {}), ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'].map((d, i) =>
-                h('span', { class: i === today ? 'today' : '' }, d)), h('span', {}, 'Meta')),
+            h('h2', {}, t('Semana da família')),
+            h('div', { class: 'wk-head' }, h('span', {}), I18n.weekdays('narrow').map((d, i) =>
+                h('span', { class: i === today ? 'today' : '' }, d)), h('span', {}, t('Meta'))),
             rows.map(({ m, grid }) => {
                 const done = grid.filter(Boolean).length;
                 const goal = m.goal || 3;
@@ -81,9 +81,9 @@
         const gap = rows[0].v - rows[1].v;
         return h('div', { class: 'panel duel' },
             h('h2', {}, `⚔️ ${team.name}`),
-            h('div', { class: 'duel-faces' }, rows.map((r) => h('div', { class: 'face' }, Fit.avatar(r.m, 52), h('strong', {}, r.m.name), h('b', {}, `${r.v} pts`)))),
+            h('div', { class: 'duel-faces' }, rows.map((r) => h('div', { class: 'face' }, Fit.avatar(r.m, 52), h('strong', {}, r.m.name), h('b', {}, `${r.v} ${t('pts')}`)))),
             h('div', { class: 'split' }, rows.map((r) => h('i', { style: `flex:${total ? r.v : 1};background:${Fit.safeColor(r.m.color)}` }))),
-            h('p', { class: 'lead' }, gap === 0 ? 'Empate! Quem treinar a seguir ganha a vantagem.' : `${rows[0].m.name} lidera por ${gap} pts esta semana`));
+            h('p', { class: 'lead' }, gap === 0 ? t('Empate! Quem treinar a seguir ganha a vantagem.') : t('{name} lidera por {gap} pts esta semana', { name: rows[0].m.name, gap })));
     }
 
     // ---------- Comparar perfis ----------
@@ -97,8 +97,8 @@
     function comparePanel() {
         const members = Fit.members();
         if (members.length < 2) {
-            return h('div', { class: 'panel' }, h('h2', {}, 'Comparar'),
-                h('p', { class: 'empty' }, 'Precisas de pelo menos 2 perfis. Importa o perfil de alguém da família em Perfis.'));
+            return h('div', { class: 'panel' }, h('h2', {}, t('Comparar')),
+                h('p', { class: 'empty' }, t('Precisas de pelo menos 2 perfis. Importa o perfil de alguém da família em Perfis.')));
         }
         if (!ui.cmp) ui.cmp = new Set(members.slice(0, 4).map((m) => m.id));
         ui.cmp = new Set([...ui.cmp].filter((id) => Fit.member(id)));
@@ -127,28 +127,28 @@
             streak: Fit.streaks(m.id).best, lv: Fit.level(Fit.stats(m.id).points),
         }));
         const rowDefs = [
-            ['Nível', (r) => r.lv.lv, (r) => `${r.lv.lv}`],
-            ['Pontos', (r) => r.pts, (r) => `${r.pts}`],
-            ['Dias treinados', (r) => r.days, (r) => `${r.days}`],
-            ['Melhor sequência', (r) => r.streak, (r) => `🔥 ${r.streak}`],
-            ['Volume', (r) => r.vol, (r) => METRICS.volume.fmt(r.vol)],
+            [t('Nível'), (r) => r.lv.lv, (r) => `${r.lv.lv}`],
+            [t('Pontos'), (r) => r.pts, (r) => `${r.pts}`],
+            [t('Dias treinados'), (r) => r.days, (r) => `${r.days}`],
+            [t('Melhor sequência'), (r) => r.streak, (r) => `🔥 ${r.streak}`],
+            [t('Volume'), (r) => r.vol, (r) => METRICS.volume.fmt(r.vol)],
         ];
 
         return h('div', { class: 'panel' },
-            h('h2', {}, 'Comparar perfis'),
+            h('h2', {}, t('Comparar perfis')),
             chips,
             chosen.length ? h('div', { class: 'cmp-wrap' }, h('table', { class: 'cmp' },
                 h('thead', {}, h('tr', {}, h('th', {}), chosen.map((m) => h('th', {}, Fit.avatar(m, 30), h('small', {}, m.name))))),
                 h('tbody', {}, rowDefs.map(([label, val, text]) => {
                     const top = Math.max(...all.map(val));
                     return h('tr', {}, h('td', {}, label), all.map((r) => h('td', { class: top > 0 && val(r) === top ? 'best' : '' }, text(r))));
-                })))) : h('p', { class: 'empty' }, 'Escolhe pelo menos um perfil.'),
-            field('Exercício', select('ex', Fit.exercises.map((e) => [e.id, `${e.name} · ${e.muscle}`]), ui.exercise, (v) => { ui.exercise = v; renderRank(); })),
+                })))) : h('p', { class: 'empty' }, t('Escolhe pelo menos um perfil.')),
+            field(t('Exercício'), select('ex', Fit.exercises.map((e) => [e.id, `${e.name} · ${t(e.muscle)}`]), ui.exercise, (v) => { ui.exercise = v; renderRank(); })),
             chosen.length ? chart : null,
             chosen.length ? h('div', { class: 'legend' }, series.map(({ m, data }) => h('span', {},
                 h('i', { style: `background:${Fit.safeColor(m.color)}` }),
                 `${m.name}: ${data.length ? `${Fit.fmtNum(best(data))} ${metric.unit}${best(data) === maxBest && series.length > 1 ? ' 🏆' : ''}` : '—'}`))) : null,
-            h('small', { class: 'muted' }, `Métrica: ${metric.label}`));
+            h('small', { class: 'muted' }, t('Métrica: {label}', { label: metric.label })));
     }
 
     function renderRank() {

@@ -21,9 +21,9 @@
             return;
         }
         const message = ios
-            ? 'No Safari, toca em Partilhar (⬆) e escolhe "Adicionar ao ecrã principal".'
-            : 'No menu do navegador (⋮) escolhe "Instalar app" ou "Adicionar ao ecrã principal".';
-        if (typeof showDialog === 'function') showDialog({ title: 'Instalar app', message, type: 'alert' });
+            ? t('No Safari, toca em Partilhar (⬆) e escolhe "Adicionar ao ecrã principal".')
+            : t('No menu do navegador (⋮) escolhe "Instalar app" ou "Adicionar ao ecrã principal".');
+        if (typeof showDialog === 'function') showDialog({ title: t('Instalar app'), message, type: 'alert' });
     });
 
     refresh();

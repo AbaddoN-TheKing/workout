@@ -65,7 +65,7 @@
     }
 
     // ---------- Níveis e conquistas ----------
-    const TITLES = ['Caloiro', 'Ativo', 'Dedicado', 'Atleta', 'Guerreiro', 'Elite', 'Lenda'];
+    const TITLES = [t('Caloiro'), t('Ativo'), t('Dedicado'), t('Atleta'), t('Guerreiro'), t('Elite'), t('Lenda')];
 
     function level(points) {
         const lv = Math.floor(Math.sqrt(points / 40)) + 1;
@@ -75,15 +75,15 @@
     }
 
     const BADGES = [
-        ['first', '🎯', 'Primeiro treino', (a) => a.sessions >= 1],
-        ['s5', '💪', '5 treinos', (a) => a.sessions >= 5],
-        ['s25', '🏅', '25 treinos', (a) => a.sessions >= 25],
-        ['s100', '🏆', '100 treinos', (a) => a.sessions >= 100],
-        ['st3', '🔥', '3 dias seguidos', (a) => a.best >= 3],
-        ['st7', '⚡', '7 dias seguidos', (a) => a.best >= 7],
-        ['v1', '🏗️', '1 tonelada levantada', (a) => a.volume >= 1000],
-        ['v10', '🚛', '10 toneladas', (a) => a.volume >= 10000],
-        ['goal', '⭐', 'Meta semanal cumprida', (a) => a.weekDone],
+        ['first', '🎯', t('Primeiro treino'), (a) => a.sessions >= 1],
+        ['s5', '💪', t('5 treinos'), (a) => a.sessions >= 5],
+        ['s25', '🏅', t('25 treinos'), (a) => a.sessions >= 25],
+        ['s100', '🏆', t('100 treinos'), (a) => a.sessions >= 100],
+        ['st3', '🔥', t('3 dias seguidos'), (a) => a.best >= 3],
+        ['st7', '⚡', t('7 dias seguidos'), (a) => a.best >= 7],
+        ['v1', '🏗️', t('1 tonelada levantada'), (a) => a.volume >= 1000],
+        ['v10', '🚛', t('10 toneladas'), (a) => a.volume >= 10000],
+        ['goal', '⭐', t('Meta semanal cumprida'), (a) => a.weekDone],
     ];
 
     function badges(id) {
@@ -109,30 +109,30 @@
 
     function rankMessage(id) {
         const board = leaderboard('points', 'week');
-        if (board.length < 2) return 'Convida a família: importa os perfis deles no separador Perfis e começa a competição!';
+        if (board.length < 2) return t('Convida a família: importa os perfis deles no separador Perfis e começa a competição!');
         const i = board.findIndex((r) => r.m.id === id);
         if (i < 0) return '';
-        if (board.every((r) => r.v === 0)) return 'Semana nova, tabela a zeros. Quem treinar primeiro, lidera!';
+        if (board.every((r) => r.v === 0)) return t('Semana nova, tabela a zeros. Quem treinar primeiro, lidera!');
         if (i === 0) {
             const gap = board[0].v - board[1].v;
-            return gap > 0 ? `Lideras a semana! ${board[1].m.name} está a ${gap} pts — não abrandes! 🔥` : `Empate no topo com ${board[1].m.name}. Desempata hoje! 💥`;
+            return gap > 0 ? t('Lideras a semana! {name} está a {gap} pts — não abrandes! 🔥', { name: board[1].m.name, gap }) : t('Empate no topo com {name}. Desempata hoje! 💥', { name: board[1].m.name });
         }
         const gap = board[i - 1].v - board[i].v;
-        return gap > 0 ? `Faltam ${gap + 1} pts para passares ${board[i - 1].m.name}! 💪` : `Empatado com ${board[i - 1].m.name}. Um treino e passas à frente! ⚡`;
+        return gap > 0 ? t('Faltam {gap} pts para passares {name}! 💪', { gap: gap + 1, name: board[i - 1].m.name }) : t('Empatado com {name}. Um treino e passas à frente! ⚡', { name: board[i - 1].m.name });
     }
 
     // ---------- Painel motivacional ----------
     const QUOTES = [
-        'A disciplina vence a motivação.',
-        'Hoje é dia de superar o treino de ontem.',
-        'Não precisas de ser perfeito. Só precisas de começar.',
-        'Um treino mau é melhor do que nenhum.',
-        'O corpo alcança aquilo em que a mente acredita.',
-        'Cada repetição é um voto no atleta que queres ser.',
-        'Suor hoje, orgulho amanhã.',
-        'A consistência bate o talento.',
-        'Vem treinar. A família está a ver os pontos! 😄',
-        'Mais um dia, mais uma oportunidade de ficares mais forte.',
+        t('A disciplina vence a motivação.'),
+        t('Hoje é dia de superar o treino de ontem.'),
+        t('Não precisas de ser perfeito. Só precisas de começar.'),
+        t('Um treino mau é melhor do que nenhum.'),
+        t('O corpo alcança aquilo em que a mente acredita.'),
+        t('Cada repetição é um voto no atleta que queres ser.'),
+        t('Suor hoje, orgulho amanhã.'),
+        t('A consistência bate o talento.'),
+        t('Vem treinar. A família está a ver os pontos! 😄'),
+        t('Mais um dia, mais uma oportunidade de ficares mais forte.'),
     ];
     const quote = () => QUOTES[Math.floor(Date.now() / DAY) % QUOTES.length];
 
@@ -151,7 +151,7 @@
             h('div', { class: 'ring-text' }, h('b', {}, String(value)), h('small', {}, `/${goal}`)));
     }
 
-    const DAY_LETTERS = ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'];
+    const DAY_LETTERS = I18n.weekdays('narrow');
 
     function weekStrip(id) {
         const grid = weekGrid(id);
@@ -172,24 +172,24 @@
             h('div', { class: 'hero-top' },
                 Fit.avatar(m, 58),
                 h('div', { class: 'grow' },
-                    h('small', { class: 'kicker' }, st.trainedToday ? 'Treino feito hoje' : 'Bora treinar,'),
+                    h('small', { class: 'kicker' }, st.trainedToday ? t('Treino feito hoje') : t('Bora treinar,')),
                     h('div', { class: 'hero-name' }, m.name),
-                    h('span', { class: 'chip lv' }, `Nível ${lv.lv} · ${lv.title}`)),
+                    h('span', { class: 'chip lv' }, `${t('Nível {lv}', { lv: lv.lv })} · ${lv.title}`)),
                 ring(week.days, goal)),
             h('div', { class: 'xp' }, h('i', { style: `width:${Math.round(lv.pct * 100)}%` })),
             h('div', { class: 'hero-stats' },
-                h('div', {}, h('b', {}, `🔥 ${st.current}`), h('small', {}, st.current === 1 ? 'dia seguido' : 'dias seguidos')),
-                h('div', {}, h('b', {}, String(total.points)), h('small', {}, 'pontos')),
-                h('div', {}, h('b', {}, String(total.sessions)), h('small', {}, 'treinos'))),
+                h('div', {}, h('b', {}, `🔥 ${st.current}`), h('small', {}, st.current === 1 ? t('dia seguido') : t('dias seguidos'))),
+                h('div', {}, h('b', {}, String(total.points)), h('small', {}, t('pontos'))),
+                h('div', {}, h('b', {}, String(total.sessions)), h('small', {}, t('treinos')))),
             weekStrip(id),
             h('p', { class: 'quote' }, rankMessage(id) || quote()));
     }
 
     function onboarding() {
         return h('div', { class: 'panel cta' },
-            h('h2', {}, 'Começa por criar um perfil'),
-            h('p', { class: 'muted' }, 'Cria o teu perfil (ou importa o de alguém da família) para registares treinos e medidas e entrares no ranking.'),
-            h('a', { class: 'btn', href: '#perfis' }, 'Ir para Perfis'));
+            h('h2', {}, t('Começa por criar um perfil')),
+            h('p', { class: 'muted' }, t('Cria o teu perfil (ou importa o de alguém da família) para registares treinos e medidas e entrares no ranking.')),
+            h('a', { class: 'btn', href: '#perfis' }, t('Ir para Perfis')));
     }
 
     Object.assign(window.Fit, {

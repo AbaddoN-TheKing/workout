@@ -3,14 +3,14 @@
     'use strict';
     const { h, field, select, toast } = window.Fit;
 
-    const EQUIP_EMOJI = { 'Peso corporal': '🤸', Halteres: '🏋️', Barra: '🏗️', Kettlebell: '🔔', 'Elástico': '🪢', Anilha: '💿', 'Barra fixa': '🧗', Banco: '🛋️', 'Máquina': '⚙️', Cardio: '🏃' };
-    const MUSCLE_EMOJI = { Peito: '🛡️', Costas: '🦅', Ombros: '🏔️', 'Bíceps': '💪', 'Tríceps': '🔱', Pernas: '🦵', 'Glúteos': '🍑', Abdominais: '🎯', Cardio: '❤️' };
+    const EQUIP_EMOJI = { 'Peso corporal': '🤸', Halteres: '🏋️', Barra: '🏗️', Kettlebell: '🔔', 'Elástico': '🪢', Anilha: '💿', 'Barra fixa': '🧗', Banco: '🛋️', 'Máquina': '⚙️', Cardio: '🏃', Bola: '⚽', Piscina: '🏊', Raquete: '🎾' };
+    const MUSCLE_EMOJI = { Peito: '🛡️', Costas: '🦅', Ombros: '🏔️', 'Bíceps': '💪', 'Tríceps': '🔱', Pernas: '🦵', 'Glúteos': '🍑', Abdominais: '🎯', Cardio: '❤️', 'Antebraços': '🦾', 'Corpo inteiro': '⚡', Mobilidade: '🧘' };
     const GOALS = {
-        strength: { label: 'Força', s: 4, r: 6, cardio: 10, plank: 1 },
-        hyper: { label: 'Hipertrofia', s: 3, r: 10, cardio: 15, plank: 1 },
-        endure: { label: 'Resistência', s: 3, r: 15, cardio: 20, plank: 2 },
+        strength: { label: t('Força'), s: 4, r: 6, cardio: 10, plank: 1 },
+        hyper: { label: t('Hipertrofia'), s: 3, r: 10, cardio: 15, plank: 1 },
+        endure: { label: t('Resistência'), s: 3, r: 15, cardio: 20, plank: 2 },
     };
-    const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const DAYS = I18n.weekdays();
 
     const ui = { step: 1, eq: new Set(['Peso corporal']), muscles: new Set(), n: 6, goal: 'hyper', list: [], member: '', day: null };
 
@@ -31,7 +31,7 @@
     function generate() {
         const muscles = [...ui.muscles].filter((m) => pool(m).length);
         const missing = [...ui.muscles].filter((m) => !pool(m).length);
-        if (missing.length) toast(`Sem exercícios de ${missing.join(', ')} com esse equipamento.`);
+        if (missing.length) toast(t('Sem exercícios de {muscles} com esse equipamento.', { muscles: missing.map(t).join(', ') }));
         const chosen = [];
         const used = new Set();
         const queues = new Map(muscles.map((m) => [m, shuffle(pool(m))]));
@@ -58,39 +58,39 @@
     }
 
     function stepper() {
-        const steps = ['Equipamento', 'Músculos', 'Treino'];
-        return h('div', { class: 'stepper' }, steps.map((t, i) => h('div', { class: `st${ui.step === i + 1 ? ' on' : ''}${ui.step > i + 1 ? ' done' : ''}` },
-            h('b', {}, String(i + 1)), h('span', {}, t))));
+        const steps = [t('Equipamento'), t('Músculos'), t('Treino')];
+        return h('div', { class: 'stepper' }, steps.map((label, i) => h('div', { class: `st${ui.step === i + 1 ? ' on' : ''}${ui.step > i + 1 ? ' done' : ''}` },
+            h('b', {}, String(i + 1)), h('span', {}, label))));
     }
 
     function stepEquip() {
         return h('div', { class: 'panel' },
-            h('h2', {}, 'O que tens à mão?'),
-            h('p', { class: 'muted small' }, 'Escolhe o equipamento disponível (podes marcar vários).'),
-            h('div', { class: 'gen-grid' }, uniq('equip').map((eq) => tile(EQUIP_EMOJI[eq] || '🏷️', eq, ui.eq.has(eq), () => {
+            h('h2', {}, t('O que tens à mão?')),
+            h('p', { class: 'muted small' }, t('Escolhe o equipamento disponível (podes marcar vários).')),
+            h('div', { class: 'gen-grid' }, uniq('equip').map((eq) => tile(EQUIP_EMOJI[eq] || '🏷️', t(eq), ui.eq.has(eq), () => {
                 ui.eq.has(eq) ? ui.eq.delete(eq) : ui.eq.add(eq);
                 render();
             }))),
-            h('button', { type: 'button', disabled: ui.eq.size ? null : 'disabled', onclick: () => { if (ui.eq.size) { ui.step = 2; render(); } } }, 'Continuar'));
+            h('button', { type: 'button', disabled: ui.eq.size ? null : 'disabled', onclick: () => { if (ui.eq.size) { ui.step = 2; render(); } } }, t('Continuar')));
     }
 
     function stepMuscles() {
         const available = uniq('muscle').filter((m) => pool(m).length);
         return h('div', { class: 'panel' },
-            h('h2', {}, 'O que queres treinar?'),
-            h('div', { class: 'gen-grid' }, available.map((m) => tile(MUSCLE_EMOJI[m] || '💪', m, ui.muscles.has(m), () => {
+            h('h2', {}, t('O que queres treinar?')),
+            h('div', { class: 'gen-grid' }, available.map((m) => tile(MUSCLE_EMOJI[m] || '💪', t(m), ui.muscles.has(m), () => {
                 ui.muscles.has(m) ? ui.muscles.delete(m) : ui.muscles.add(m);
                 render();
             }))),
             h('div', { class: 'row' },
-                field('Objetivo', select('goal', Object.entries(GOALS).map(([k, v]) => [k, `${v.label} (${v.s}×${v.r})`]), ui.goal, (v) => { ui.goal = v; })),
-                field('Exercícios', select('n', [4, 5, 6, 8, 10].map((n) => [String(n), String(n)]), String(ui.n), (v) => { ui.n = Number(v); }))),
+                field(t('Objetivo'), select('goal', Object.entries(GOALS).map(([k, v]) => [k, `${v.label} (${v.s}×${v.r})`]), ui.goal, (v) => { ui.goal = v; })),
+                field(t('Exercícios'), select('n', [4, 5, 6, 8, 10].map((n) => [String(n), String(n)]), String(ui.n), (v) => { ui.n = Number(v); }))),
             h('div', { class: 'row' },
-                h('button', { type: 'button', class: 'secondary', onclick: () => { ui.step = 1; render(); } }, 'Voltar'),
+                h('button', { type: 'button', class: 'secondary', onclick: () => { ui.step = 1; render(); } }, t('Voltar')),
                 h('button', { type: 'button', onclick: () => {
-                    if (!ui.muscles.size) { toast('Escolhe pelo menos um músculo.'); return; }
-                    if (generate()) { ui.step = 3; render(); } else toast('Não encontrei exercícios. Muda o equipamento.');
-                } }, '🎲 Gerar treino')));
+                    if (!ui.muscles.size) { toast(t('Escolhe pelo menos um músculo.')); return; }
+                    if (generate()) { ui.step = 3; render(); } else toast(t('Não encontrei exercícios. Muda o equipamento.'));
+                } }, t('🎲 Gerar treino'))));
     }
 
     function rowFor(item, i) {
@@ -100,16 +100,16 @@
             h('input', { type: 'number', min: 1, inputmode: 'numeric', value: item[key],
                 oninput: (e) => { item[key] = Math.max(1, Math.round(Number(e.target.value)) || 1); } }));
         return h('li', { class: 'plan-item' },
-            h('div', { class: 'grow' }, h('strong', {}, ex.name), h('small', {}, `${ex.muscle} · ${ex.equip}`),
-                h('div', { class: 'row mini' }, time ? null : mini('Séries', 's'), mini(time ? 'Min' : 'Reps', 'r'))),
-            h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Trocar exercício', title: 'Trocar', onclick: () => {
+            h('div', { class: 'grow' }, h('strong', {}, ex.name), h('small', {}, `${t(ex.muscle)} · ${t(ex.equip)}`),
+                h('div', { class: 'row mini' }, time ? null : mini(t('Séries'), 's'), mini(time ? t('Min') : t('Reps'), 'r'))),
+            h('button', { type: 'button', class: 'btn-x', 'aria-label': t('Trocar exercício'), title: t('Trocar'), onclick: () => {
                 const used = new Set(ui.list.map((p) => p.e));
                 const options = pool(ex.muscle).filter((e) => !used.has(e.id));
-                if (!options.length) { toast('Não há alternativas com esse equipamento.'); return; }
+                if (!options.length) { toast(t('Não há alternativas com esse equipamento.')); return; }
                 ui.list[i] = defaults(options[Math.floor(Math.random() * options.length)]);
                 render();
             } }, '🔀'),
-            h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Remover', onclick: () => { ui.list.splice(i, 1); render(); } }, '×'));
+            h('button', { type: 'button', class: 'btn-x', 'aria-label': t('Remover'), onclick: () => { ui.list.splice(i, 1); render(); } }, '×'));
     }
 
     function stepResult() {
@@ -119,28 +119,28 @@
         const addMore = () => {
             const used = new Set(ui.list.map((p) => p.e));
             const options = Fit.exercises.filter((e) => ui.muscles.has(e.muscle) && ui.eq.has(e.equip) && !used.has(e.id));
-            if (!options.length) { toast('Já usaste todos os exercícios possíveis.'); return; }
+            if (!options.length) { toast(t('Já usaste todos os exercícios possíveis.')); return; }
             ui.list.push(defaults(options[Math.floor(Math.random() * options.length)]));
             render();
         };
         return h('div', { class: 'panel' },
-            h('h2', {}, 'O teu treino'),
-            ui.list.length ? h('ul', { class: 'list' }, ui.list.map(rowFor)) : h('p', { class: 'empty' }, 'Lista vazia. Adiciona ou gera de novo.'),
+            h('h2', {}, t('O teu treino')),
+            ui.list.length ? h('ul', { class: 'list' }, ui.list.map(rowFor)) : h('p', { class: 'empty' }, t('Lista vazia. Adiciona ou gera de novo.')),
             h('div', { class: 'row' },
-                h('button', { type: 'button', class: 'secondary', onclick: addMore }, '＋ Mais um'),
-                h('button', { type: 'button', class: 'secondary', onclick: () => { generate(); render(); } }, '🔄 Regenerar')),
+                h('button', { type: 'button', class: 'secondary', onclick: addMore }, t('＋ Mais um')),
+                h('button', { type: 'button', class: 'secondary', onclick: () => { generate(); render(); } }, t('🔄 Regenerar'))),
             hasMembers ? [
-                field('Para', select('m', Fit.members().map((m) => [m.id, m.name]), ui.member, (v) => { ui.member = v; })),
-                h('button', { type: 'button', disabled: ui.list.length ? null : 'disabled', onclick: () => ui.list.length && window.Plan.startWith(ui.member, ui.list) }, '▶ Começar agora'),
+                field(t('Para'), select('m', Fit.members().map((m) => [m.id, m.name]), ui.member, (v) => { ui.member = v; })),
+                h('button', { type: 'button', disabled: ui.list.length ? null : 'disabled', onclick: () => ui.list.length && window.Plan.startWith(ui.member, ui.list) }, t('▶ Começar agora')),
                 h('div', { class: 'row center' },
                     select('day', DAYS.map((d, i) => [String(i), d]), String(ui.day), (v) => { ui.day = Number(v); }),
                     h('button', { type: 'button', class: 'secondary', onclick: () => {
                         if (!ui.list.length) return;
                         ui.list.forEach((p) => window.Plan.add(ui.member, ui.day, p.e, p.s, p.r));
-                        toast(`Guardado no plano de ${DAYS[ui.day]}`);
-                    } }, '📅 Guardar no plano')),
+                        toast(t('Guardado no plano de {day}', { day: DAYS[ui.day] }));
+                    } }, t('📅 Guardar no plano'))),
             ] : Fit.onboarding(),
-            h('button', { type: 'button', class: 'secondary', onclick: () => { ui.step = 2; render(); } }, 'Voltar'));
+            h('button', { type: 'button', class: 'secondary', onclick: () => { ui.step = 2; render(); } }, t('Voltar')));
     }
 
     function render() {

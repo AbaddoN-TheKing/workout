@@ -97,13 +97,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateProfileSelect() {
     const select = document.getElementById('profileSelect');
-    select.innerHTML = '<option value="">Novo cartão</option>';
+    select.replaceChildren(Object.assign(document.createElement('option'), { value: '', textContent: t('Novo cartão') }));
 
     profiles.forEach((p, index) => {
         const option = document.createElement('option');
         option.value = index;
         const star = p.favorite ? ' ⭐' : '';
-        option.textContent = (p.name || `Cartão ${p.card}`) + star;
+        option.textContent = (p.name || t('Cartão {card}', { card: p.card })) + star;
         select.appendChild(option);
     });
 }
@@ -170,16 +170,16 @@ function handleMagicUrlInput(input) {
 
             if (newCard && newDevice && validateCard() && validateDevice()) {
                 setTimeout(async () => {
-                    const ok = await showDialog({ message: 'Cartão detetado! Queres guardá-lo como novo perfil?', type: 'confirm' });
+                    const ok = await showDialog({ message: t('Cartão detetado! Queres guardá-lo como novo perfil?'), type: 'confirm' });
                     if (ok) {
-                        const name = await showDialog({ message: 'Nome do perfil:', type: 'prompt', defaultValue: 'O meu cartão' });
+                        const name = await showDialog({ message: t('Nome do perfil:'), type: 'prompt', defaultValue: t('O meu cartão') });
                         if (name) {
                             profiles.push({ name, card: newCard, device: newDevice, favorite: false });
                             saveProfilesToStorage();
                             updateProfileSelect();
                             document.getElementById('profileSelect').value = profiles.length - 1;
                             loadProfile();
-                            showToast('Perfil guardado!');
+                            showToast(t('Perfil guardado!'));
                         }
                     }
                 }, 300);
@@ -214,16 +214,16 @@ async function saveProfile() {
     const index = document.getElementById('profileSelect').value;
 
     if (!card || !device) {
-        await showDialog({ message: "Preenche os campos." });
+        await showDialog({ message: t("Preenche os campos.") });
         return;
     }
 
     if (!validateCard() || !validateDevice()) {
-        await showDialog({ message: "Os dados parecem inválidos. Verifica os formatos." });
+        await showDialog({ message: t("Os dados parecem inválidos. Verifica os formatos.") });
         return;
     }
 
-    const name = await showDialog({ message: "Nome do perfil:", type: 'prompt', defaultValue: index !== "" ? profiles[index].name : "O meu cartão" });
+    const name = await showDialog({ message: t("Nome do perfil:"), type: 'prompt', defaultValue: index !== "" ? profiles[index].name : t("O meu cartão") });
     if (!name) return;
 
     let isFav = false;
@@ -248,14 +248,14 @@ async function saveProfile() {
         document.getElementById('profileSelect').value = index;
     }
     loadProfile();
-    showToast('Perfil guardado!');
+    showToast(t('Perfil guardado!'));
 }
 
 async function deleteProfile() {
     const index = document.getElementById('profileSelect').value;
     if (index === "") return;
 
-    const ok = await showDialog({ message: "Apagar este perfil?", type: 'confirm' });
+    const ok = await showDialog({ message: t("Apagar este perfil?"), type: 'confirm' });
     if (ok) {
         profiles.splice(index, 1);
         saveProfilesToStorage();
@@ -370,7 +370,7 @@ async function handleLogin() {
     const deviceInput = document.getElementById('deviceId').value.trim();
 
     if (!cardInput || !deviceInput) {
-        await showDialog({ message: "Preenche todos os campos." });
+        await showDialog({ message: t("Preenche todos os campos.") });
         return;
     }
 
@@ -378,7 +378,7 @@ async function handleLogin() {
     const isDeviceValid = validateDevice();
 
     if (!isCardValid || !isDeviceValid) {
-        await showDialog({ message: "Corrige os erros de formato antes de gerar." });
+        await showDialog({ message: t("Corrige os erros de formato antes de gerar.") });
         return;
     }
 
@@ -432,9 +432,9 @@ function shareUrl() {
     url.searchParams.set('device', state.deviceId);
 
     navigator.clipboard.writeText(url.toString()).then(() => {
-        showToast("URL copiado!");
+        showToast(t("URL copiado!"));
     }).catch(() => {
-        showToast("Não foi possível copiar o URL.");
+        showToast(t("Não foi possível copiar o URL."));
     });
 }
 
@@ -462,7 +462,7 @@ function handleOverlayClick(event) {
 
 async function sha256(message) {
     if (!crypto.subtle) {
-        showToast("Erro: contexto não seguro (requer HTTPS).");
+        showToast(t("Erro: contexto não seguro (requer HTTPS)."));
         throw new Error('crypto.subtle unavailable');
     }
     const msgBuffer = new TextEncoder().encode(message);
@@ -505,7 +505,9 @@ async function generateQR() {
             correctLevel: QRCode.CorrectLevel.M
         });
     } catch (e) {
-        container.innerHTML = '<p style="color: var(--danger); font-size: 0.85rem;">Erreur de génération</p>';
+        const error = Object.assign(document.createElement('p'), { textContent: t('Erro ao gerar o QR code') });
+        error.style.cssText = 'color: var(--danger); font-size: 0.85rem;';
+        container.replaceChildren(error);
         clearInterval(state.timerInterval);
     }
 }

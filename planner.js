@@ -6,7 +6,7 @@
     const PLAN_KEY = 'fit_plan_v1';
     const SESSION_KEY = 'fit_session_v1';
     const REST_KEY = 'fit_rest_v1';
-    const DAYS = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
+    const DAYS = I18n.weekdays();
     const REST_OPTIONS = [30, 45, 60, 90, 120, 180];
 
     const read = (key, fallback) => {
@@ -25,7 +25,7 @@
         : localStorage.removeItem(SESSION_KEY));
 
     const exercise = (id) => Fit.byId(id);
-    const planLabel = (p) => (exercise(p.e)?.kind === 'time' ? `${p.r} min` : `${p.s}×${p.r}`);
+    const planLabel = (p) => (exercise(p.e)?.kind === 'time' ? `${p.r} ${t('min')}` : `${p.s}×${p.r}`);
     const memberOptions = () => Fit.members().map((m) => [m.id, m.name]);
     const clock = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
@@ -77,15 +77,15 @@
             if (!ex) return null;
             return h('li', { class: 'plan-item' },
                 h('div', { class: 'grow' },
-                    h('strong', {}, ex.name), h('small', {}, `${ex.muscle} · ${ex.equip}`),
+                    h('strong', {}, ex.name), h('small', {}, `${t(ex.muscle)} · ${t(ex.equip)}`),
                     h('div', { class: 'row mini' },
-                        ex.kind === 'time' ? null : miniField('Séries', p, 's'),
-                        miniField(ex.kind === 'time' ? 'Min' : 'Reps', p, 'r'))),
+                        ex.kind === 'time' ? null : miniField(t('Séries'), p, 's'),
+                        miniField(ex.kind === 'time' ? t('Min') : t('Reps'), p, 'r'))),
                 h('div', { class: 'col-btns' },
-                    h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Subir', onclick: () => move(i, -1) }, '▲'),
-                    h('button', { type: 'button', class: 'btn-x', 'aria-label': 'Descer', onclick: () => move(i, 1) }, '▼')),
+                    h('button', { type: 'button', class: 'btn-x', 'aria-label': t('Subir'), onclick: () => move(i, -1) }, '▲'),
+                    h('button', { type: 'button', class: 'btn-x', 'aria-label': t('Descer'), onclick: () => move(i, 1) }, '▼')),
                 h('button', {
-                    type: 'button', class: 'btn-x', 'aria-label': 'Remover',
+                    type: 'button', class: 'btn-x', 'aria-label': t('Remover'),
                     onclick: () => { list.splice(i, 1); savePlans(); renderAll(); },
                 }, '×'));
         }).filter(Boolean);
@@ -94,34 +94,34 @@
 
         root.append(
             h('div', { class: 'panel' },
-                field('Plano de', select('m', memberOptions(), ui.member, (v) => { ui.member = v; renderPlan(); })),
+                field(t('Plano de'), select('m', memberOptions(), ui.member, (v) => { ui.member = v; renderPlan(); })),
                 h('div', { class: 'seg days' }, dayButtons)),
-            h('div', { class: 'panel' }, h('h2', {}, `Treino de ${DAYS[ui.day]}`),
-                items.length ? h('ul', { class: 'list' }, items) : h('p', { class: 'empty' }, 'Dia de descanso. Adiciona exercícios abaixo.'),
+            h('div', { class: 'panel' }, h('h2', {}, t('Treino de {day}', { day: DAYS[ui.day] })),
+                items.length ? h('ul', { class: 'list' }, items) : h('p', { class: 'empty' }, t('Dia de descanso. Adiciona exercícios abaixo.')),
                 items.length ? h('div', { class: 'row center' },
                     select('copyTo', copyOptions, String(ui.copyTo), (v) => { ui.copyTo = Number(v); }),
-                    h('button', { type: 'button', class: 'secondary', onclick: copyDay }, 'Copiar'),
-                    h('button', { type: 'button', class: 'secondary', onclick: clearDay }, 'Limpar')) : null),
+                    h('button', { type: 'button', class: 'secondary', onclick: copyDay }, t('Copiar')),
+                    h('button', { type: 'button', class: 'secondary', onclick: clearDay }, t('Limpar'))) : null),
             h('form', { class: 'panel', onsubmit: onAddPlan },
-                h('h2', {}, 'Adicionar ao dia'),
-                field('Músculo', select('muscle', muscles.map((x) => [x, x]), ui.muscle, (v) => { ui.muscle = v; renderPlan(); })),
-                field('Exercício', select('e', pool.map((e) => [e.id, `${e.name} · ${e.equip}`]), pool[0].id, () => {})),
-                h('div', { class: 'row' }, field('Séries', numInput('s', 3)), field('Reps / min', numInput('r', 10))),
-                h('button', { type: 'submit' }, 'Adicionar')));
+                h('h2', {}, t('Adicionar ao dia')),
+                field(t('Músculo'), select('muscle', muscles.map((x) => [x, t(x)]), ui.muscle, (v) => { ui.muscle = v; renderPlan(); })),
+                field(t('Exercício'), select('e', pool.map((e) => [e.id, `${e.name} · ${t(e.equip)}`]), pool[0].id, () => {})),
+                h('div', { class: 'row' }, field(t('Séries'), numInput('s', 3)), field(t('Reps / min'), numInput('r', 10))),
+                h('button', { type: 'submit' }, t('Adicionar'))));
     }
 
     async function copyDay() {
         const src = plans[ui.member][ui.day];
         const dst = plans[ui.member][ui.copyTo] || [];
-        if (dst.length && !(await confirmDialog(`Substituir o treino de ${DAYS[ui.copyTo]}?`))) return;
+        if (dst.length && !(await confirmDialog(t('Substituir o treino de {day}?', { day: DAYS[ui.copyTo] })))) return;
         plans[ui.member][ui.copyTo] = src.map((p) => ({ ...p }));
         savePlans();
-        toast(`Copiado para ${DAYS[ui.copyTo]}`);
+        toast(t('Copiado para {day}', { day: DAYS[ui.copyTo] }));
         renderAll();
     }
 
     async function clearDay() {
-        if (!(await confirmDialog(`Limpar o treino de ${DAYS[ui.day]}?`))) return;
+        if (!(await confirmDialog(t('Limpar o treino de {day}?', { day: DAYS[ui.day] })))) return;
         plans[ui.member][ui.day] = [];
         savePlans();
         renderAll();
@@ -153,7 +153,7 @@
         const rc = document.getElementById('restClock');
         const left = Math.ceil((restEnd - Date.now()) / 1000);
         if (left > 0) {
-            const text = `Descanso ${clock(left)}`;
+            const text = `${t('Descanso')} ${clock(left)}`;
             if (rc && rc.textContent !== text) rc.textContent = text;
         } else {
             if (rc) rc.textContent = '';
@@ -185,7 +185,7 @@
     }
 
     async function cancelSession() {
-        if (!(await confirmDialog('Cancelar este treino sem guardar?'))) return;
+        if (!(await confirmDialog(t('Cancelar este treino sem guardar?')))) return;
         session = null;
         restEnd = 0;
         saveSession();
@@ -199,7 +199,7 @@
                 sets: item.sets.filter((s) => s.done).map((s) => ({ r: s.r || 0, kg: s.kg || 0, min: s.min || 0 })),
             }))
             .filter((entry) => entry.sets.length);
-        if (!done.length) { toast('Marca pelo menos uma série como feita (✓).'); return; }
+        if (!done.length) { toast(t('Marca pelo menos uma série como feita (✓).')); return; }
 
         // Recordes: comparar com o histórico antes de guardar
         const records = done.filter((entry) => {
@@ -218,8 +218,8 @@
         restEnd = 0;
         saveSession();
         toast(records.length
-            ? `🏆 Recorde: ${records.slice(0, 2).join(', ')}${records.length > 2 ? '…' : ''} · +${total} pts`
-            : `Treino guardado! +${total} pontos`);
+            ? t('🏆 Recorde: {names} · +{total} pts', { names: `${records.slice(0, 2).join(', ')}${records.length > 2 ? '…' : ''}`, total })
+            : t('Treino guardado! +{total} pontos', { total }));
         renderSession();
     }
 
@@ -233,10 +233,10 @@
         return h('div', { class: `set${set.done ? ' done' : ''}` },
             h('span', { class: 'set-n' }, index + 1),
             ex.kind === 'time'
-                ? setInput(set, 'min', 'min')
-                : [ex.kind === 'load' ? setInput(set, 'kg', 'kg') : null, setInput(set, 'r', 'reps')],
+                ? setInput(set, 'min', t('min'))
+                : [ex.kind === 'load' ? setInput(set, 'kg', 'kg') : null, setInput(set, 'r', t('reps'))],
             h('button', {
-                type: 'button', class: 'btn-ok', 'aria-label': 'Concluir série',
+                type: 'button', class: 'btn-ok', 'aria-label': t('Concluir série'),
                 onclick: () => { set.done = !set.done; saveSession(); if (set.done) startRest(); renderSession(); },
             }, '✓'));
     }
@@ -244,31 +244,31 @@
     function lastHint(ex) {
         const last = Fit.lastSet(session.m, ex.id);
         if (!last) return null;
-        if (ex.kind === 'time') return `Última vez: ${last.min} min`;
-        return `Última vez: ${ex.kind === 'load' ? `${last.kg} kg × ` : ''}${last.r}${ex.kind === 'load' ? '' : ' reps'}`;
+        if (ex.kind === 'time') return t('Última vez: {v}', { v: `${last.min} ${t('min')}` });
+        return t('Última vez: {v}', { v: `${ex.kind === 'load' ? `${last.kg} kg × ` : ''}${last.r}${ex.kind === 'load' ? '' : ` ${t('reps')}`}` });
     }
 
     function itemPanel(item) {
         const ex = exercise(item.e);
         return h('div', { class: 'panel' },
             h('div', { class: 'row between' },
-                h('div', {}, h('h2', {}, ex.name), h('small', { class: 'muted' }, `${ex.muscle} · ${ex.equip}`),
+                h('div', {}, h('h2', {}, ex.name), h('small', { class: 'muted' }, `${t(ex.muscle)} · ${t(ex.equip)}`),
                     lastHint(ex) ? h('small', { class: 'muted hint' }, lastHint(ex)) : null),
                 h('button', {
-                    type: 'button', class: 'btn-x', 'aria-label': 'Remover exercício',
+                    type: 'button', class: 'btn-x', 'aria-label': t('Remover exercício'),
                     onclick: () => { session.items = session.items.filter((i) => i !== item); saveSession(); renderSession(); },
                 }, '×')),
             item.sets.map((s, i) => setRow(ex, s, i)),
             h('button', {
                 type: 'button', class: 'secondary',
                 onclick: () => { item.sets.push({ ...item.sets.at(-1), done: false }); saveSession(); renderSession(); },
-            }, '+ Série'));
+            }, t('+ Série')));
     }
 
     function addExercisePanel() {
         let pick = Fit.exercises[0].id;
-        return h('div', { class: 'panel' }, h('h2', {}, 'Adicionar exercício'),
-            select('e', Fit.exercises.map((e) => [e.id, `${e.name} (${e.muscle})`]), pick, (v) => { pick = v; }),
+        return h('div', { class: 'panel' }, h('h2', {}, t('Adicionar exercício')),
+            select('e', Fit.exercises.map((e) => [e.id, `${e.name} (${t(e.muscle)})`]), pick, (v) => { pick = v; }),
             h('button', {
                 type: 'button', class: 'secondary',
                 onclick: () => {
@@ -277,22 +277,22 @@
                     saveSession();
                     renderSession();
                 },
-            }, 'Adicionar'));
+            }, t('Adicionar')));
     }
 
     function startPanel() {
         const plan = (plans[ui.member]?.[todayIdx()] ?? []).filter((p) => exercise(p.e));
         return h('div', { class: 'panel' },
-            h('h2', {}, `Treinar · ${DAYS[todayIdx()]}`),
-            field('Quem', select('m', memberOptions(), ui.member, (v) => { ui.member = v; renderSession(); })),
+            h('h2', {}, t('Treinar · {day}', { day: DAYS[todayIdx()] })),
+            field(t('Quem'), select('m', memberOptions(), ui.member, (v) => { ui.member = v; renderSession(); })),
             plan.length
                 ? h('ul', { class: 'list' }, plan.map((p) => h('li', {},
                     h('div', { class: 'grow' }, exercise(p.e).name, h('small', {}, planLabel(p))))))
-                : h('p', { class: 'empty' }, 'Sem plano para hoje. Cria-o no separador Plano ou começa um treino livre.'),
-            h('button', { type: 'button', onclick: () => startSession(plan) }, plan.length ? 'Começar treino' : 'Treino livre'),
+                : h('p', { class: 'empty' }, t('Sem plano para hoje. Cria-o no separador Plano ou começa um treino livre.')),
+            h('button', { type: 'button', onclick: () => startSession(plan) }, plan.length ? t('Começar treino') : t('Treino livre')),
             h('div', { class: 'row' },
-                h('a', { class: 'btn secondary', href: '#gerador' }, '🎲 Gerar treino'),
-                h('a', { class: 'btn secondary', href: '#programas' }, '📋 Programas')));
+                h('a', { class: 'btn secondary', href: '#gerador' }, t('🎲 Gerar treino')),
+                h('a', { class: 'btn secondary', href: '#programas' }, t('📋 Programas'))));
     }
 
     function renderSession() {
@@ -314,25 +314,25 @@
         root.append(...[
             h('div', { class: 'panel' },
                 h('div', { class: 'row between' },
-                    h('h2', {}, `Treino de ${name}`),
+                    h('h2', {}, t('Treino de {name}', { name })),
                     h('span', { class: 'timer', id: 'sessionClock' })),
                 h('div', { class: 'row center between' },
                     h('p', { class: 'rest', id: 'restClock' }),
-                    h('label', { class: 'mini-fld rest-pick' }, h('span', {}, 'Descanso'),
+                    h('label', { class: 'mini-fld rest-pick' }, h('span', {}, t('Descanso')),
                         select('rest', REST_OPTIONS.map((s) => [String(s), `${s}s`]), String(restSeconds), (v) => {
                             restSeconds = Number(v);
                             localStorage.setItem(REST_KEY, String(restSeconds));
                         })))),
             ...session.items.map(itemPanel),
             addExercisePanel(),
-            h('div', { class: 'panel' }, h('h2', {}, 'Notas'),
+            h('div', { class: 'panel' }, h('h2', {}, t('Notas')),
                 h('textarea', {
-                    rows: 2, maxlength: 300, placeholder: 'Como correu? (opcional)',
+                    rows: 2, maxlength: 300, placeholder: t('Como correu? (opcional)'),
                     oninput: (e) => { session.note = e.target.value; saveSession(); },
                 }, session.note || '')),
             h('div', { class: 'row' },
-                h('button', { type: 'button', class: 'secondary', onclick: cancelSession }, 'Cancelar'),
-                h('button', { type: 'button', onclick: finishSession }, 'Terminar')),
+                h('button', { type: 'button', class: 'secondary', onclick: cancelSession }, t('Cancelar')),
+                h('button', { type: 'button', onclick: finishSession }, t('Terminar'))),
         ]);
         kick();
     }
@@ -365,7 +365,7 @@
                 renderSession();
                 location.hash = '#treinos';
             };
-            if (session) confirmDialog('Já tens um treino a decorrer. Substituir por este?').then((ok) => { if (ok) go(); });
+            if (session) confirmDialog(t('Já tens um treino a decorrer. Substituir por este?')).then((ok) => { if (ok) go(); });
             else go();
         },
         exportFor(member) {
